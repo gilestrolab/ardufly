@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  untitled.py
+#  flymon.py
 #  
 #  Copyright 2012 Giorgio Gilestro <gg@kinsey>
 #  
@@ -22,17 +22,52 @@
 #  
 #  
 
-import serial
+import serial, os, datetime
+from platform import system
+from time import strftime
 
-def main():
+if system() == 'Linux': 
+    port = '/dev/ttyUSB0'
+    path_save = ''
+
+elif system() == 'Windows':
+    port = 'com5'
+    path_save = 'DAM/flymons/'
+
+else:
+    print 'Operative system not supported'
+    os.sys.exit(1)
     
-    ser = serial.Serial('/dev/ttyUSB0', 57600)
+def saveValues(l):
+    '''
+    '''
+    m, c, t1, h1, l1, t2, bat = l.split(',')
+    filename = os.path.join(path_save, 'flymon%02d.txt' % int(m) )
+    
+    date = strftime("%d-%M-%d")
+    time = strftime("%H:%M:%S")
+    
+    fh = open (filename, 'a')
+    string = '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (c, date, time, m, t1, h1, l1, t2, bat)
+    fh.write(string)
+    fh.close()
+    
+    
+
+def readInput():
+    '''
+    ID,count,t1,h1,l1,t2,bat
+    4,150,23.49,19.03,200,0,0
+    '''
+    
+    ser = serial.Serial(port, 57600)
+
     while True:
-        l = ser.readline()
-        print l
+        l = ser.readline().strip()
+        if 'Ready' not in l: saveValues(l)
         
     return 0
 
 if __name__ == '__main__':
-    main()
+    readInput()
 
