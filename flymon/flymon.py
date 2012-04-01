@@ -44,7 +44,7 @@ def saveValues(l):
     m, c, t1, h1, l1, t2, bat = l.split(',')
     filename = os.path.join(path_save, 'flymon%02d.txt' % int(m) )
     
-    date = strftime("%d-%M-%d")
+    date = strftime("%d %b %Y")
     time = strftime("%H:%M:%S")
     
     fh = open (filename, 'a')

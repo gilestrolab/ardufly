@@ -1,7 +1,7 @@
 #include <JeeLib.h>
 #include <PortsSHT11.h>
 
-#define NODE_ID 2    //define the node ID 
+#define NODE_ID 5    //define the node ID 
 #define INTERVAL 60  //refresh interval for sending data, in seconds
 
 #define DEBUG 0      //run in debug mode
