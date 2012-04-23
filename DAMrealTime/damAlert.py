@@ -23,9 +23,10 @@
 #  
 
 
-from DAMrealtime import DAMrealtime
+from DAMrealtime import DAMrealtime, ENVrealtime
 
-base_path = '/home/gg/Desktop/test/'
+dam_path = '/home/gg/Desktop/test/'
+env_path = '/home/gg/Desktop/test/'
 
 email = dict (
               sender = 'g.gilestro@imperial.ac.uk',
@@ -34,14 +35,14 @@ email = dict (
               )
 
 
-d = DAMrealtime(path=base_path, email=email, useEnvironmental=True)
+d = DAMrealtime(path=dam_path, email=email)
+e = ENVrealtime(path=env_path, email=email)
 
 DAM_problems = [( fname, d.getDAMStatus(fname) ) for fname in d.listDAMMonitors() if d.getDAMStatus(fname) == '50']
-ENV_problems = [( fname, d.hasEnvProblem(fname) ) for fname in d.listEnvMonitors() if d.hasEnvProblem(fname)]
-
+ENV_problems = [( fname, e.hasEnvProblem(fname) ) for fname in e.listEnvMonitors() if e.hasEnvProblem(fname)]
 
 if DAM_problems: d.alert(DAM_problems)
-if ENV_problems: d.alert(ENV_problems)
+if ENV_problems: e.alert(ENV_problems)
 
 
 

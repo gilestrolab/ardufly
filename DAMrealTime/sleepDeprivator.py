@@ -22,21 +22,30 @@
 #  
 #  
 
-from DAMrealtime import DAMrealtime
+from DAMrealtime import SDrealtime
 from time import sleep
-import serial
+import serial, optparse
+__version__ = '0.2'
 
-use_serial = True
+usage =  '%prog [options] [argument]\n'
+version= '%prog version ' + str(__version__)
+
+parser = optparse.OptionParser(usage=usage, version=version )
+parser.add_option('-p', '--port', dest='port', metavar="/dev/ttyXXX", help="Specifies the serial port to which the SD is connected. Default /dev/ttyACM0")
+parser.add_option('-d', '--d', dest='path', metavar="/path/to/data/", help="Specifies the path to the monitor to be sleep deprived. If a folder is given, all monitors inside will be sleep deprived.")
+parser.add_option('--simulate', action="store_false", default=True, dest='use_serial', help="Simulate action only")
+
+(options, args) = parser.parse_args()
+
+port = options.port or '/dev/ttyACM0'
+use_serial = options.use_serial
+path = options.path
 
 if use_serial: 
-    ser = serial.Serial('/dev/ttyACM0', 57600)
+    ser = serial.Serial(port, 57600)
     sleep(2)
 
-#fullpath to a single monitor file (or to of a folder containing all monitors)
-path = '/home/gg/Desktop/DAMS/'
-
-
-r = DAMrealtime(path=path, folderName='videoDAM')
+r = SDrealtime(path=path)
 
 for fname in r.listDAMMonitors():
     command = r.deprive(fname)

@@ -29,15 +29,13 @@ import numpy as np
 import serial
 from time import strptime
 
+
 class DAMrealtime():
-    def __init__(self, path, email=None, useEnvironmental=False, folderName='DAMSystem3Data'):
+    def __init__(self, path, email=None):
         '''
         '''
         
-        self.path = os.path.join(path, folderName)
-        
-        if useEnvironmental:
-                self.flymon_path = os.path.join(path, 'flymons')
+        self.path = path
         
         if email:
             self.email_sender = email['sender']
@@ -70,33 +68,78 @@ class DAMrealtime():
         
         return value
         
-    def hasEnvProblem(self, filename):
+
+    def __listFiles(self, path, prefix):
         '''
-        1	09 Dec 11	19:02:19	m	t1	h1	l1	t2	bat
         '''
-        fh = open (filename, 'r')
-        lastline = fh.read().strip().split('\n')[-2]
-        fh.close()
+        l = ''
+        if not os.path.isfile(path):
+                dirList=os.listdir(path)
+                l = [os.path.join(path, f) for f in dirList if prefix in f]
         
-        count, date, time, mid, t1, h1, l1, t2, bat = lastline.split('\t')
+        elif prefix in path:
+                l = [path]
+                
+        return l
+
+
+
+    def listDAMMonitors(self, prefix='Monitor'):
+        '''
+        list all monitor files in the specified path.
+        prefix should match the file name
+        filename        prefix
+
+        Monitor01.txt   Monitor
+        MON01.txt       MON
+        '''
         
-        rec_time = strptime(date + ' ' + time, '%d %b %Y %H:%M:%S')
-        dusk = strptime (self.env['dusk'], '%H:%M')
-        dawn = strptime (self.env['dawn'], '%H:%M')
+        return self.__listFiles(self.path, prefix)
+
+
+    def alert(self, problems):
+        '''
+        problems is a list of tuples
+        each tuple contains two values: the filename where the problem
+        was detected, and the problem
         
+        problems = [('Monitor1.txt','50')]
         
-        isNight = rec_time.tm_hour > dusk.tm_hour and rec_time.tm_min > dusk.tm_min
-        isDay = not isNight
+        '''
         
-        temperature_problem = float(t1) < self.env['min_temperature'] or float(t1) > self.env['max_temperature']
-        humidity_problem = float(h1) < self.env['min_humidity'] or float(h1) > self.env['max_humidity']
-        light_problem = isNight and int(l1) > self.env['max_night_light'] or isDay and int(l1) < self.env['min_day_light']
+        now = datetime.datetime.now()
+        message = 'At %s, found problems with the following monitors:\n' % now
         
-        if temperature_problem or humidity_problem or light_problem:
-                return count, date, time, mid, t1, h1, l1, t2, bat
-        else:
-                return False
-        
+        for (monitor, value) in problems:
+            message += '%s\t%s\n' % (os.path.split(monitor)[1], value)
+
+
+       
+        msg = MIMEMultipart()
+        msg['From'] = 'Fly Dam Alert service'
+        msg['To'] =  self.email_recipient
+        msg['Subject'] = 'flyDAM alert!'
+
+
+        try:
+            text = MIMEText(message, 'plain')
+            msg.attach(text)
+
+            s = smtplib.SMTP(self.email_server)
+            s.sendmail( self.email_sender, self.email_recipient, msg.as_string() )
+            s.quit()
+
+            print msg.as_string()
+
+        except smtplib.SMTPException:
+           print "Error: unable to send email"
+
+
+
+class SDrealtime(DAMrealtime):
+    def __init__(self, *args, **kwargs):
+
+        DAMrealtime.__init__(self, *args, **kwargs)
 
     def getAsleep(self, filename, interval=5):
         '''
@@ -165,34 +208,13 @@ class DAMrealtime():
         
         return '\n'.join(cmd)
 
-    def __listFiles(self, path, prefix):
-        '''
-        '''
-        l = ''
-        
-        if not os.path.isfile(path):
-                dirList=os.listdir(path)
-                l = [os.path.join(path, f) for f in dirList if prefix in f]
-        
-        elif prefix in path:
-                l = [path]
-                
-        return l
 
+            
+class ENVrealtime(DAMrealtime):
+    def __init__(self, *args, **kwargs):
 
-
-    def listDAMMonitors(self, prefix='Monitor'):
-        '''
-        list all monitor files in the specified path.
-        prefix should match the file name
-        filename        prefix
-
-        Monitor01.txt   Monitor
-        MON01.txt       MON
-        '''
-        
-        return self.__listFiles(self.path, prefix)
-        
+        DAMrealtime.__init__(self, *args, **kwargs)
+        self.flymon_path = os.path.join(path, 'flymons')
 
     def listEnvMonitors(self, prefix='flymon'):
         '''
@@ -200,44 +222,32 @@ class DAMrealtime():
         prefix should match the file name
         filename        prefix
         '''
-
         return self.__listFiles(self.flymon_path, prefix)
 
-
-    def alert(self, problems):
+    def hasEnvProblem(self, filename):
         '''
-        problems is a list of tuples
-        each tuple contains two values: the filename where the problem
-        was detected, and the problem
-        
-        problems = [('Monitor1.txt','50')]
-        
+        1	09 Dec 11	19:02:19	m	t1	h1	l1	t2	bat
         '''
+        fh = open (filename, 'r')
+        lastline = fh.read().strip().split('\n')[-2]
+        fh.close()
         
-        now = datetime.datetime.now()
-        message = 'At %s, found problems with the following monitors:\n' % now
+        count, date, time, mid, t1, h1, l1, t2, bat = lastline.split('\t')
         
-        for (monitor, value) in problems:
-            message += '%s\t%s\n' % (os.path.split(monitor)[1], value)
-
-
-       
-        msg = MIMEMultipart()
-        msg['From'] = 'Fly Dam Alert service'
-        msg['To'] =  self.email_recipient
-        msg['Subject'] = 'flyDAM alert!'
-
-
-        try:
-            text = MIMEText(message, 'plain')
-            msg.attach(text)
-
-            s = smtplib.SMTP(self.email_server)
-            s.sendmail( self.email_sender, self.email_recipient, msg.as_string() )
-            s.quit()
-
-            print msg.as_string()
-
-        except smtplib.SMTPException:
-           print "Error: unable to send email"
+        rec_time = strptime(date + ' ' + time, '%d %b %Y %H:%M:%S')
+        dusk = strptime (self.env['dusk'], '%H:%M')
+        dawn = strptime (self.env['dawn'], '%H:%M')
+        
+        
+        isNight = rec_time.tm_hour > dusk.tm_hour and rec_time.tm_min > dusk.tm_min
+        isDay = not isNight
+        
+        temperature_problem = float(t1) < self.env['min_temperature'] or float(t1) > self.env['max_temperature']
+        humidity_problem = float(h1) < self.env['min_humidity'] or float(h1) > self.env['max_humidity']
+        light_problem = isNight and int(l1) > self.env['max_night_light'] or isDay and int(l1) < self.env['min_day_light']
+        
+        if temperature_problem or humidity_problem or light_problem:
+                return count, date, time, mid, t1, h1, l1, t2, bat
+        else:
+                return False
 
