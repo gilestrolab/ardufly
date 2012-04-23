@@ -25,24 +25,15 @@
 import serial, os, datetime
 from platform import system
 from time import strftime
+import optparse
 
-if system() == 'Linux': 
-    port = '/dev/ttyUSB0'
-    path_save = ''
-
-elif system() == 'Windows':
-    port = 'com5'
-    path_save = 'DAM/flymons/'
-
-else:
-    print 'Operative system not supported'
-    os.sys.exit(1)
+__version__ = '0.2'    
     
-def saveValues(l):
+def saveValues(l, path):
     '''
     '''
     m, c, t1, h1, l1, t2, bat = l.split(',')
-    filename = os.path.join(path_save, 'flymon%02d.txt' % int(m) )
+    filename = os.path.join(path, 'flymon%02d.txt' % int(m) )
     
     date = strftime("%d %b %Y")
     time = strftime("%H:%M:%S")
@@ -54,7 +45,7 @@ def saveValues(l):
     
     
 
-def readInput():
+def readInput(port, path):
     '''
     ID,count,t1,h1,l1,t2,bat
     4,150,23.49,19.03,200,0,0
@@ -64,10 +55,23 @@ def readInput():
 
     while True:
         l = ser.readline().strip()
-        if 'Ready' not in l: saveValues(l)
+        if 'Ready' not in l: saveValues(l, path)
         
     return 0
 
 if __name__ == '__main__':
-    readInput()
+
+    usage =  '%prog [options] [argument]\n'
+    version= '%prog version ' + str(__version__)
+    
+    parser = optparse.OptionParser(usage=usage, version=version )
+    parser.add_option('-p', '--port', dest='port', metavar="/dev/ttyXXX", help="Specifies the serial port to which the reader is connected")
+    parser.add_option('-d', '--d', dest='path', metavar="/path/to/data/", help="Specifies where data are going to be saved")
+
+    (options, args) = parser.parse_args()
+    
+    if options.port and options.path:
+        readInput(options.port, options.path)
+    else:
+        parser.error("You must specify port and path")
 

@@ -112,8 +112,8 @@ void printHelp() {
 
 
 void testAll() {
-  for (int monitor = 1; monitor < 4; monitor++) {
-    for (int channel = 1; channel < 12; channel++)
+  for (int monitor = 1; monitor <= 4; monitor++) {
+    for (int channel = 1; channel <= 12; channel++)
     {
       int pin = servo[monitor-1][channel-1];
       moveServo(pin);
