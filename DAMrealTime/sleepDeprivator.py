@@ -51,8 +51,10 @@ r = SDrealtime(path=path)
 for fname in r.listDAMMonitors():
     command = r.deprive(fname)
     print command
-    if use_serial:
+    if command and use_serial:
         print '%s - Sent to Serial port %s' % (dt.now(), port)
         ser.write(command)
+    else:
+        print '%s - Nothing to send to serial port' % dt.now()
 
 if use_serial: ser.close()
