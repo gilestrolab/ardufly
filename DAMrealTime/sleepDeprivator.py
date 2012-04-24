@@ -24,6 +24,7 @@
 
 from DAMrealtime import SDrealtime
 from time import sleep
+from datetime import datetime as dt
 import serial, optparse
 __version__ = '0.2'
 
@@ -50,6 +51,8 @@ r = SDrealtime(path=path)
 for fname in r.listDAMMonitors():
     command = r.deprive(fname)
     print command
-    if use_serial: ser.write(command)
+    if use_serial:
+        print '%s - Sent to Serial port %s' % (dt.now(), port)
+        ser.write(command)
 
 if use_serial: ser.close()
