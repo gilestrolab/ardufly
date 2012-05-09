@@ -149,7 +149,7 @@ class SDrealtime(DAMrealtime):
         1	09 Dec 11	19:02:19	1	0	1	0	0	0	?		[actual_activity]
         '''
         
-        interval_for_dead = 30 #dead if they haven't moved in this time
+        interval_for_dead = 60 #dead if they haven't moved in this time
         
         fh = open (filename, 'r')
         lastlines = fh.read().split('\n')[ - (2+interval_for_dead) : -2]
@@ -178,11 +178,11 @@ class SDrealtime(DAMrealtime):
                 dead_threshold = 50
                 asleep_threshold = 10 * interval
 
-                # dead because they didn't move for the past 30 mins
+                # dead because they didn't move for the past x mins
                 dead = ( activity.sum(axis=0) <= dead_threshold ) * 1
-                # didn't move in the past 5
+                # didn't move in the past "interval"
                 asleep = ( activity[-interval:].sum(axis=0) <= asleep_threshold ) * 1
-                # did move in the past 5
+                # did move in the past "interval"
                 awake = ( activity[-interval:].sum(axis=0) > asleep_threshold ) * 1
                 # asleep but not dead
                 sleepDep = asleep - dead
