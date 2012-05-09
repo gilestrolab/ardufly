@@ -202,6 +202,7 @@ class SDrealtime(DAMrealtime):
         '''
         
         monitor = int ( filter(lambda x: x.isdigit(), os.path.split(fname)[1] ) )
+        if monitor > 50 : monitor = monitor - 50
         
         flies = self.getAsleep(fname, interval)
         cmd = ['M %02d %02d' % (monitor, channel+1) for (channel,sleeping) in enumerate(flies) if sleeping] 
