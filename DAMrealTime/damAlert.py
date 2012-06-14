@@ -24,26 +24,42 @@
 
 
 from DAMrealtime import DAMrealtime, ENVrealtime
+import optparse
 
-dam_path = '/home/gg/Desktop/test/'
-env_path = '/home/gg/Desktop/test/'
-
-email = dict (
-              sender = 'g.gilestro@imperial.ac.uk',
-              recipient  = 'giorgio.gilestro@gmail.com',
-              server = 'automail.cc.ic.ac.uk'
-              )
+__version__ = '0.2'    
 
 
-d = DAMrealtime(path=dam_path, email=email)
-e = ENVrealtime(path=env_path, email=email)
+if __name__ == '__main__':
 
-DAM_problems = [( fname, d.getDAMStatus(fname) ) for fname in d.listDAMMonitors() if d.getDAMStatus(fname) == '50']
-ENV_problems = [( fname, e.hasEnvProblem(fname) ) for fname in e.listEnvMonitors() if e.hasEnvProblem(fname)]
+    usage =  '%prog [options] [argument]\n'
+    version= '%prog version ' + str(__version__)
+    
+    parser = optparse.OptionParser(usage=usage, version=version )
+    parser.add_option('-d', '--dampath', dest='dam_path', metavar="/path/to/DAM/", help="Specifies where the RAW TriKinetics files are located")
+    parser.add_option('-e', '--envpath', dest='env_path', metavar="/path/to/flymon/", help="Specifies where the RAW flymon files are located")
 
-if DAM_problems: d.alert(DAM_problems)
-if ENV_problems: e.alert(ENV_problems)
+    (options, args) = parser.parse_args()
 
+    email = dict (
+                  sender = 'g.gilestro@imperial.ac.uk',
+                  recipient  = 'giorgio.gilestro@gmail.com',
+                  server = 'automail.cc.ic.ac.uk'
+                  )
+
+    if options.dam_path:
+       d = DAMrealtime(path=options.dam_path, email=email)
+       DAM_problems = [( fname, d.getDAMStatus(fname) ) for fname in d.listDAMMonitors() if d.getDAMStatus(fname) == '50']
+       if DAM_problems: d.alert(DAM_problems)
+       
+    if options.env_path:
+       e = ENVrealtime(path=options.env_path, email=email)
+       ENV_problems = [( fname, e.hasEnvProblem(fname) ) for fname in e.listEnvMonitors() if e.hasEnvProblem(fname)]
+       if ENV_problems: e.alert(ENV_problems)
+
+
+    if not options.dam_path and not options.env_path:
+        parser.error("You must specify a path for TriKinetics or flymon files")
+        parser.print_help()  
 
 
 
