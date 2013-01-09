@@ -22,7 +22,8 @@ const int servo[4][12] =
 int shake = 2; // number of times the servo rotates
 int pause = 1000; //pause between multiple motors rotating in ms
 int rotation_delay = 300; // pause between each motor turn
-boolean use_servo = 1;
+boolean use_servo = true;
+boolean independent_mode = true;
 
 void setup() 
 { 
@@ -34,9 +35,14 @@ void setup()
  sCmd.addCommand("S",     changeShake); // Takes one argument. Change the shake pattern; default 2
  sCmd.addCommand("P",     changePause); // Takes one argument. Change the pause delay; default 1000
  sCmd.addCommand("L",     listValues);
- sCmd.addCommand("T",     testAll);
+ sCmd.addCommand("T",     testAll); // Rotates them all once
+ sCmd.addCommand("MM",    testSingleMonitor); // Rotates them all once in Monitor xx
+ sCmd.addCommand("AUTO",  autoMode); // Start autoMode (keep rotating at random intervals of xx-yy minutes)
  sCmd.setDefaultHandler(printError);      // Handler for command that isn't matched  (says "What?")
  Serial.println("Ready.");
+
+ if (independent_mode) { autoMode(); }
+
  
 } 
 
@@ -101,15 +107,38 @@ void chooseChannel() {
 
 void printHelp() {
   Serial.println("M xx yy    Moves Monitor xx (1-4) Channel yy (1-12)");
+  Serial.println("MM xx      Moves all in monitor xx");
   Serial.println("S xx       Changes the shake number (default 2)");
   Serial.println("P xx       Changes the delay between rotations (default 1000)");
   Serial.println("L          List currently set values");
   Serial.println("T          Test all servos in sequence");
+  Serial.println("AUTO xx yy      Auto Mode - does not require a PC connected");
   Serial.println("HELP       Print this help message");
   Serial.println("");
 
 }
 
+void testSingleMonitor(){
+  int monitor;
+  char *arg;
+
+  arg = sCmd.next();
+  if (arg != NULL) {
+    monitor = atoi(arg);
+  }
+  moveMonitor(monitor);
+ 
+}
+
+
+void moveMonitor(int monitor) {
+  for (int channel = 1; channel <= 12; channel++)
+  {
+    int pin = servo[monitor-1][channel-1];
+    moveServo(pin);
+    delay(pause);
+  }
+}
 
 void testAll() {
   for (int monitor = 1; monitor <= 4; monitor++) {
@@ -122,6 +151,35 @@ void testAll() {
   } 
 }
 
+void autoMode(){
+  int min_min = 1; // default values
+  int max_min = 7; // default values
+  char *arg;
+
+  arg = sCmd.next();
+  if (arg != NULL) {
+    min_min = atoi(arg);
+  }
+
+  arg = sCmd.next();
+  if (arg != NULL) {
+    max_min = atoi(arg);
+  }
+
+
+  Serial.println("Auto Mode started");
+  while (true) {
+      moveMonitor(1);
+      moveMonitor(2);
+      Serial.print("Next rotation in ");
+      int rand = random(min_min, max_min); //random number between min_min, max_min
+      Serial.print(rand);
+      Serial.println(" minutes");
+      delay( (rand * 60000) ); 
+  }
+}
+
+  
 void moveServo(int pin)
 {
 
@@ -149,3 +207,4 @@ void loop()
 {
   sCmd.readSerial();     // We don't do much, just process serial commands
 }
+
