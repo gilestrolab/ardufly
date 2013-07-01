@@ -23,7 +23,7 @@ int shake = 2; // number of times the servo rotates
 int pause = 1000; //pause between multiple motors rotating in ms
 int rotation_delay = 300; // pause between each motor turn
 boolean use_servo = true;
-boolean independent_mode = true;
+boolean independent_mode = true; // set this to TRUE to use it without PC connected
 
 void setup() 
 { 
@@ -171,6 +171,8 @@ void autoMode(){
   while (true) {
       moveMonitor(1);
       moveMonitor(2);
+      moveMonitor(3);
+      moveMonitor(4);
       Serial.print("Next rotation in ");
       int rand = random(min_min, max_min); //random number between min_min, max_min
       Serial.print(rand);
