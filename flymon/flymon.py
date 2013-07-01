@@ -25,10 +25,31 @@
 import serial, os, datetime
 from platform import system
 from time import strftime
+
 import optparse
+import ConfigParser
 
 __version__ = '0.2'    
+
+
+
+def readFromConfig(filename):
+    """
+    """
+    cfg = {}
     
+    if os.path.exists(filename):
+        config = ConfigParser.RawConfigParser()
+        config.read(filename)
+
+        cfg['port'] = config.get('options', 'input')
+        cfg['output'] = config.get('options', 'output')
+        return cfg
+        
+    else:
+        raise "Configfile does not exist. Please create one first"
+         
+
 def saveValues(l, path):
     '''
     '''
@@ -43,15 +64,14 @@ def saveValues(l, path):
     fh.write(string)
     fh.close()
     
-    
 
-def readInput(port, path):
+def readInput(port, path, baud=57600):
     '''
     ID,count,t1,h1,l1,t2,bat
     4,150,23.49,19.03,200,0,0
     '''
     
-    ser = serial.Serial(port, 57600)
+    ser = serial.Serial(port, baud)
 
     while True:
         l = ser.readline().strip()
@@ -65,6 +85,7 @@ if __name__ == '__main__':
     version= '%prog version ' + str(__version__)
     
     parser = optparse.OptionParser(usage=usage, version=version )
+    parser.add_option('-c', '--config', dest='config', metavar="/path/to/config", help="Specifies path to configuration file")
     parser.add_option('-p', '--port', dest='port', metavar="/dev/ttyXXX", help="Specifies the serial port to which the reader is connected")
     parser.add_option('-d', '--d', dest='path', metavar="/path/to/data/", help="Specifies where data are going to be saved")
 
