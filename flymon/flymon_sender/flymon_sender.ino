@@ -1,7 +1,43 @@
+/*
+ * flymon_sender.ino
+ * 
+ * Copyright 2013 Giorgio Gilestro <giorgio@gilest.ro>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ * 
+ * 
+ * https://github.com/ggilestro/ardufly
+ * flymon sender v1.2
+ *
+ * This is an ambient temperature, humidity, light sensor
+ * Will transmit data wirelessely using the RF12 capabilities of a jeenode
+ * To upload, use Arduino IDE and select 
+ *
+ * REMEMBER: define the node_ID to be unique in your network
+ * keeping in mind that 1 is used for the receiver
+ * 
+ *
+ * 
+ *
+ */
+
 #include <JeeLib.h>
 #include <PortsSHT11.h>
 
-#define NODE_ID 5    //define the node ID 
+#define NODE_ID 6    //define the node ID 
 #define INTERVAL 60  //refresh interval for sending data, in seconds
 
 #define DEBUG 0      //run in debug mode
