@@ -181,7 +181,30 @@ void autoMode(){
   }
 }
 
-  
+//Implemented by Luis Garcia @ polygolantree on 30/7/13 - not yet tested
+//Problem with current drawing (120-200 mA each)
+void rotatesAll(){
+  Serial.println("Start all rotates");
+  for (int i=0; i<2;i++){
+    servoArray[i].attach(16+i);
+    Serial.println("Attached servo");
+  }
+   for (int i=0; i<1;i++)
+      {
+       for( int j = 0; j < shake; j++) {
+          servoArray[i].write(0);              // writes angle to 0
+          servoArray[i+1].write(0);
+        delay(rotation_delay);
+          servoArray[i].write(180);
+          servoArray[i+1].write(180);
+        delay(rotation_delay);
+      
+        }
+         servoArray[i].detach();
+         servoArray[i+1].detach();
+      }
+}
+
 void moveServo(int pin)
 {
 
