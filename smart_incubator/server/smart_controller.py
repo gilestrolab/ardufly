@@ -17,6 +17,7 @@ __version__ = '0.2'
 class SerialController(object):
     def __init__(self,port,baud):
         self._serial = serial.Serial(port,baud)
+        self._serial.write('I 5')
         # # a map of device_id -> last time seen.
         # self._detected_devices = {}
 
@@ -24,37 +25,51 @@ class SerialController(object):
         self._delta_time_threshold = 15 #s
 
     def _parse_serial_line(self,line):
-        logging.debug("Getting" + line)
-        fields = line.rstrip().spit(" ")
+        logging.debug("Getting line = " + line)
+        fields = line.rstrip().split(" ")
         if len(fields) != 8:
-            logging.error("Wrong number of fields in serial input")
-            raise Exception("Wrong number of fields in serial input")
+            logging.warning("Wrong number of fields in serial input. Expect 8, got %i.", len(fields))
+            logging.debug('fields = ' + str(fields))
+            return
 
         id, code, counter, device_time, temperature, humidity, light, led_level = fields
 
-        out = collections.OrderedDict(id=id, code=code, counter=counter,
-                                      device_time=device_time, temperature=temperature,
-                                      humidity=humidity, light=light, led_level=led_level)
+        out = collections.OrderedDict()
+        out['id']=int(id)
+        out['code']=code
+        out['counter']=int(counter)
+	out['device_time']=float(device_time)
+	out['server_time']=time.time()
+	out['temperature']=float(temperature)
+	out['humidity']=float(humidity)
+ 	out['light']=float(light)
+  	out['led_level']=int(led_level)
+
         logging.debug(str(out))
         return out
 
 
 
     def _sync_time(self,device_id, device_time):
-        now = time.time()
+        now = int(round(time.time()))
         if abs(device_time - now) > self._delta_time_threshold:
-            logging.warning("Current time is %i, but time on device %i is %i, syncing this device", (now, device_id, device_time))
+            logging.warning("Current time is %i, but time on device %i is %i, syncing this device"% (now, device_id, device_time))
             command = " ".join(['T', str(device_id), str(now)])
             logging.debug("Sending " + command)
-            self._serial.write(command)
-
+            self._serial.write(command + '\n')
+            out = self._serial.readline()
+            if "failed" in out:
+                logging.error("Failed to sync time!")
 
     def __iter__(self):
         while True:
             serial_line = self._serial.readline()
-            fields = self._parse_serial_line(serial_line)
-            self._sync_time( fields["id"], fields["device_time"])
 
+            fields = self._parse_serial_line(serial_line)
+            if fields is None:
+                continue
+            self._sync_time( fields["id"], fields["device_time"])
+            yield fields
 
 
 
@@ -78,13 +93,19 @@ if __name__ == '__main__':
         logging.debug("Logger in DEBUG mode")
 
 
-    serial_fetcher = SerialController(option_dict["port"], BAUD)
 
+    serial_fetcher = SerialController(option_dict["port"], BAUD)
+    time.sleep(10)
+    writer = None
     with open(option_dict["output"],"a") as output:
         for fields in serial_fetcher:
             # for now lets just do:
-            csv_line = ",".join([str(f) for f in fields])
-            output.write(csv_line)
+	    if writer is None:
+                 writer = csv.DictWriter(output, fields.keys())
+                 #writer.writeheader()
+            writer.writerow(fields)
+
+
 
 
 
