@@ -1,0 +1,61 @@
+2014-07-11 12:28:49,778 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:29:42,927 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:30:48,999 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:31:08,805 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:31:20,323 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:32:37,184 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:33:18,078 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:35:13,828 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:35:35,280 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:35:48,158 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:37:56,998 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:43:11,770 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:43:36,003 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:45:03,855 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:48:25,424 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:50:32,547 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:50:33,003 - __main__ - DEBUG - Read: Ready.
+2014-07-11 12:54:55,156 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:55:23,632 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:56:11,403 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:56:43,832 - __main__ - INFO - Started flymon monitor
+2014-07-11 12:56:44,288 - __main__ - INFO - Read: Ready.
+2014-07-11 14:42:09,440 - __main__ - INFO - Started flymon monitor
+2014-07-11 14:43:27,855 - __main__ - INFO - Started flymon monitor
+2014-07-11 14:45:54,525 - __main__ - INFO - Started flymon monitor
+2014-07-11 14:45:54,982 - __main__ - DEBUG - Read: Ready.
+2014-07-11 15:51:34,247 - __main__ - INFO - Started flymon monitor
+2014-07-11 15:51:34,704 - __main__ - DEBUG - Read: Ready.
+2014-07-11 15:54:22,745 - __main__ - INFO - Started flymon monitor
+2014-07-11 15:54:23,206 - __main__ - DEBUG - Read: FLYMON RECEIVER VERSION 1.50 - Ready.
+2014-07-11 16:06:51,178 - __main__ - DEBUG - Read: FLYMON RECEIVER VERSION 1.50 - Ready.
+2014-07-11 16:13:04,618 - __main__ - INFO - Started flymon monitor
+2014-07-11 16:13:05,080 - __main__ - DEBUG - Read: FLYMON RECEIVER VERSION 1.50 - Ready.
+2014-07-14 12:51:25,925 - __main__ - INFO - Started flymon monitor
+2014-07-14 12:51:56,998 - __main__ - INFO - Started flymon monitor
+2014-07-14 17:22:45,258 - __main__ - INFO - Started flymon monitor
+2014-07-14 17:22:53,795 - __main__ - INFO - Started flymon monitor
+2014-07-14 17:23:12,206 - __main__ - INFO - Started flymon monitor
+2014-07-14 17:23:16,414 - __main__ - INFO - Started flymon monitor
+2014-07-14 17:23:34,045 - __main__ - INFO - Started flymon monitor
+2014-07-14 17:23:40,701 - __main__ - INFO - Started flymon monitor
+2014-07-14 17:23:41,162 - __main__ - DEBUG - Read: FLYMON RECEIVER VERSION 1.50 - Ready.
+2014-07-14 17:23:45,524 - __main__ - DEBUG - Read: 6,64798,24.68,43.58,200,0,0
+2014-07-14 17:24:23,290 - __main__ - DEBUG - Read: 3,33,23.79,46.09,199,0,0
+2014-07-14 17:24:45,738 - __main__ - DEBUG - Read: 6,64799,24.74,43.46,200,0,0
+2014-07-14 17:25:24,153 - __main__ - DEBUG - Read: 3,34,23.78,46.19,199,0,0
+2014-07-14 17:25:45,951 - __main__ - DEBUG - Read: 6,64800,24.72,43.55,200,0,0
+2014-07-14 17:26:25,015 - __main__ - DEBUG - Read: 3,35,23.74,46.31,199,0,0
+2014-07-14 17:26:46,164 - __main__ - DEBUG - Read: 6,64801,24.61,43.77,200,0,0
+2014-07-14 17:27:25,877 - __main__ - DEBUG - Read: 3,36,23.74,46.31,199,0,0
+2014-07-14 17:27:46,379 - __main__ - DEBUG - Read: 6,64802,24.70,43.61,200,0,0
+2014-07-14 17:28:26,739 - __main__ - DEBUG - Read: 3,37,23.74,46.37,199,0,0
+2014-07-14 17:28:46,590 - __main__ - DEBUG - Read: 6,64803,24.76,43.52,200,0,0
+2014-07-14 17:29:27,603 - __main__ - DEBUG - Read: 3,38,23.74,46.31,199,0,0
+2014-07-14 17:29:46,803 - __main__ - DEBUG - Read: 6,64804,24.78,43.46,200,0,0
+2014-07-14 17:30:28,467 - __main__ - DEBUG - Read: 3,39,23.71,46.47,199,0,0
+2014-07-14 17:30:47,016 - __main__ - DEBUG - Read: 6,64805,24.70,43.58,200,0,0
+2014-07-14 17:31:29,331 - __main__ - DEBUG - Read: 3,40,23.74,46.37,200,0,0
+2014-07-14 17:31:34,941 - __main__ - INFO - Started flymon monitor
+2014-07-14 17:31:38,835 - __main__ - INFO - Started flymon monitor
+2014-07-14 17:32:07,215 - __main__ - INFO - Started flymon monitor

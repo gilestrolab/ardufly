@@ -1,0 +1,9 @@
+[Unit]
+Description=Flymon - Jeenode based monitoring
+
+[Service]
+ExecStart=/usr/bin/flymon.py
+
+[Install]
+WantedBy=multi-user.target
+

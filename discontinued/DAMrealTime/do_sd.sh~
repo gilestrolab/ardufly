@@ -1,0 +1,13 @@
+#!/bin/bash
+#Example: do_sd.sh 51
+
+MON=$1
+RMON=$((MON-50)
+SDDIR=${HOME}/sleepData/SD
+INFILE=$SDDIR/Monitor$MON.txt
+LOGFILE=$SDDIR/sd_log.txt
+SD=${HOME}/git/ardufly/DAMrealTime/sleepDeprivator.py
+
+echo 'Performing SD on monitor' $MON '('$RMON' in the machine)'
+python $SD -d $INFILE >> $LOGFILE
+

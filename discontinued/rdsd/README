@@ -1,0 +1,5 @@
+RDSD - Rotation Devices for Sleep Deprivation
+=============================================
+
+RDSD.pde                based on Arduino 0023
+RDSD_controller.py      send serial signal to control RDSD
