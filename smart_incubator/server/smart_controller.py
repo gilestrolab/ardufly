@@ -73,6 +73,9 @@ if __name__ == '__main__':
 
     (options, args) = parser.parse_args()
     option_dict = vars(options)
+    if(option_dict["debug"]):
+        logging.getLogger().setLevel(logging.DEBUG)
+        logging.debug("Logger in DEBUG mode")
 
 
     serial_fetcher = SerialController(option_dict["port"], BAUD)
