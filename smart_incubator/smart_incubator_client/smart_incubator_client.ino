@@ -104,6 +104,12 @@ void loop()
   mesh.update();
   if ( ( (millis() - prev_time) > delta ) and ( SEND_REPORT ) ) {
     prev_time = millis();
+
+    // Just before sending the datapackage will re-register on the network
+    // This is in case the master has gone down in the meanwhile - closes bug #2
+    mesh.renewAddress();
+    
+    // Sending package
     Serial.print("T: ");
     sendDataPackage('R');
   }
