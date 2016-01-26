@@ -96,9 +96,9 @@ void printHelp() {
   Serial.println("T ID timestamp        Set time on node ID");
   Serial.println("L ID light (0-100)    Set light levels on node ID");
   Serial.println("I ID                  Interrogates node ID");
-  Serial.println("F ID ss               Set interval (secs) between reports from node ID");
-  Serial.println("1 ID timestamp        Set time for Lights ON at lvl% - uses only HH:MM component");
-  Serial.println("0 ID timestamp        Set time for Lights OFF at lvl% - uses only HH:MM component");
+  Serial.println("F ID ss               Set interval (minutes) between reports from node ID");
+  Serial.println("1 ID timestamp        Set time for Lights ON - uses only HH:MM component");
+  Serial.println("0 ID timestamp        Set time for Lights OFF- uses only HH:MM component");
   Serial.println("==================================================================================");
 }
 
