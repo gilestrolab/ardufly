@@ -28,7 +28,7 @@ class SerialController(object):
         logging.debug("Getting line = " + line)
         fields = line.rstrip().split(" ")
         if len(fields) != 13:
-            logging.warning("Wrong number of fields in serial input. Expect 8, got %i.", len(fields))
+            logging.warning("Wrong number of fields in serial input. Expect 13, got %i.", len(fields))
             logging.debug('fields = ' + str(fields))
             return
 
