@@ -1,23 +1,17 @@
 
 import serial
 import time
-from platform import system
-from time import strftime
-
 import collections
 import csv
 import logging
 import optparse
 
 
-__version__ = '0.2'
-
-
 
 class SerialController(object):
     def __init__(self,port,baud):
         self._serial = serial.Serial(port,baud)
-        self._serial.write('I 5')
+        #self._serial.write('I 5')
         # # a map of device_id -> last time seen.
         # self._detected_devices = {}
 
@@ -100,18 +94,16 @@ if __name__ == '__main__':
 
 
     serial_fetcher = SerialController(option_dict["port"], BAUD)
-    time.sleep(10)
+    time.sleep(1)
     writer = None
-    with open(option_dict["output"],"a") as output:
+    with open(option_dict["output"],"w") as output:
+        logging.debug('Output file is ' + option_dict['output'])
         for fields in serial_fetcher:
             # for now lets just do:
 	    if writer is None:
                  writer = csv.DictWriter(output, fields.keys())
-                 #writer.writeheader()
+                 writer.writeheader()
+            logging.debug('writing row: ' + str(fields))
             writer.writerow(fields)
-
-
-
-
-
-
+            line = ','.join([str(f) for f in fields.values()])
+            output.flush()
