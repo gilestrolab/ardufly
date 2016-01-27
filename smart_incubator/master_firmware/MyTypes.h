@@ -11,11 +11,19 @@ typedef struct{
   int dest_nodeID;
   unsigned long counter;
   char cmd;
-  unsigned long unixTimeStamp;
+  //
   float temp;
   float hum;
   int light;
-  int led_level;
+  //
+  float set_hum;
+  float set_temp;
+  int set_light;
+  //
+  time_t current_time;
+  time_t lights_on;
+  time_t lights_off;
+  byte dd_mode;
 } packageStruct;
 
 #endif

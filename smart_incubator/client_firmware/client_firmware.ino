@@ -26,7 +26,7 @@
 // http://tronixstuff.com/2011/03/16/tutorial-your-arduinos-inbuilt-eeprom/
 #include <EEPROM.h>
 
-//defines
+//define hardware connection and hard parameters
 #define VERSION 1.0
 #define nodeID 5
 #define masterID 0
@@ -42,13 +42,16 @@
 //Initialising objects and variables
 DHT dht; 
 
-int currentLevel = 0;
 unsigned long counter = 0;
 unsigned long prev_time = 0;
 
-bool DD_MODE = 0;
+float TEMP = 0;
+float HUM = 0;
+
+bool DD_MODE = 1;  // 0 = DD,  1 = LD, 2 = LL
 byte LIGHTS_ON[] = { 9, 00 }; 
 byte LIGHTS_OFF[] = { 21, 00 }; 
+
 byte MAX_LIGHT = 100;
 byte CURRENT_LIGHT_STATUS = 0;
 
@@ -76,7 +79,8 @@ void setup()
   
   // Retrieves Lights ON/OFF timer values and last light status
   setLightsTimer(); 
-
+  //debug();
+  
   //radio.setRetries(15,15);
   //radio.setPayloadSize(8);
 
@@ -94,12 +98,12 @@ void setup()
 
 void loop()
 {
- //delay(dht.getMinimumSamplingPeriod());
+  REPORT_DELAY = (REPORT_DELAY == 0) ? 1 : REPORT_DELAY;
   float delta = REPORT_DELAY * 1000.0 * 60.0;
 
   byte hh = hour(); byte mm = minute(); byte ss = second();
-  if (!(DD_MODE) and (hh == LIGHTS_ON[0]) and (mm == LIGHTS_ON[1]) and (ss == 00)) { LightsON(); }
-  if (!(DD_MODE) and (hh == LIGHTS_OFF[0]) and (mm == LIGHTS_OFF[1]) and (ss == 00)) { LightsOFF(); }
+  if (( DD_MODE != 0 ) and (hh == LIGHTS_ON[0]) and (mm == LIGHTS_ON[1]) and (ss == 00)) { LightsON(); }
+  if (( DD_MODE != 2 ) and ( DD_MODE != 2 ) and (hh == LIGHTS_OFF[0]) and (mm == LIGHTS_OFF[1]) and (ss == 00)) { LightsOFF(); }
  
   mesh.update();
   if ( ( (millis() - prev_time) > delta ) and ( SEND_REPORT ) ) {
@@ -132,27 +136,27 @@ void loop()
           break;
         case 'T': 
           network.read(header,&rcvdPackage,sizeof(rcvdPackage)); 
-          if ( rcvdPackage.dest_nodeID == nodeID ) { setRTCTime (rcvdPackage.unixTimeStamp); }
+          if ( rcvdPackage.dest_nodeID == nodeID ) { setRTCTime (rcvdPackage.current_time); }
           break;
         case 'L': 
           network.read(header,&rcvdPackage,sizeof(rcvdPackage));
-          if ( rcvdPackage.dest_nodeID == nodeID ) { fadeToLevel (rcvdPackage.led_level); }
+          if ( rcvdPackage.dest_nodeID == nodeID ) { fadeToLevel (rcvdPackage.set_light); }
           break;
         case 'F': 
           network.read(header,&rcvdPackage,sizeof(rcvdPackage));
-          if ( rcvdPackage.dest_nodeID == nodeID ) { setInterval (rcvdPackage.led_level); }
+          if ( rcvdPackage.dest_nodeID == nodeID ) { setInterval (rcvdPackage.set_light); }
           break;
         case 'M': 
           network.read(header,&rcvdPackage,sizeof(rcvdPackage));
-          if ( rcvdPackage.dest_nodeID == nodeID ) { setLightMode (rcvdPackage.led_level); }
+          if ( rcvdPackage.dest_nodeID == nodeID ) { setLightMode (rcvdPackage.set_light); }
           break;
         case '1': 
           network.read(header,&rcvdPackage,sizeof(rcvdPackage)); 
-          if ( rcvdPackage.dest_nodeID == nodeID ) { changeLightsONTimer(rcvdPackage.unixTimeStamp); }
+          if ( rcvdPackage.dest_nodeID == nodeID ) { changeLightsONTimer(rcvdPackage.lights_on); }
           break;
         case '0': 
           network.read(header,&rcvdPackage,sizeof(rcvdPackage)); 
-          if ( rcvdPackage.dest_nodeID == nodeID ) { changeLightsOFFTimer(rcvdPackage.unixTimeStamp); }
+          if ( rcvdPackage.dest_nodeID == nodeID ) { changeLightsOFFTimer(rcvdPackage.lights_off); }
           break;
         default: network.read(header,0,0); Serial.println(header.type);break;
       }
@@ -171,31 +175,30 @@ void debug(){
   Serial.print("Send report: "); Serial.println(SEND_REPORT);
   Serial.print("DD Mode: "); Serial.println(DD_MODE);
   
-  sendDataPackage('R');
+  if ( mesh.checkConnection() ) {  sendDataPackage('R'); }
 }
 
 void setLightMode(int mode)
 {
+  // 0 = DD 1 = LD 2 = LL
   DD_MODE = mode;
   EEPROM.write(8, DD_MODE);
   Serial.print("DD_MODE set to "); Serial.println(DD_MODE);
 }
 
 
-void changeLightsONTimer(long unixTimeStamp)
+void changeLightsONTimer(time_t lights_on)
 {
-  time_t tt = unixTimeStamp;
-  LIGHTS_ON[0] = hour(tt);
-  LIGHTS_ON[1] = minute(tt);
+  LIGHTS_ON[0] = hour(lights_on);
+  LIGHTS_ON[1] = minute(lights_on);
   EEPROM.write(1, LIGHTS_ON[0]);
   EEPROM.write(2, LIGHTS_ON[1]);
 }
 
-void changeLightsOFFTimer(long unixTimeStamp)
+void changeLightsOFFTimer(time_t lights_off)
 {
-  time_t tt = unixTimeStamp;
-  LIGHTS_OFF[0] = hour(tt);
-  LIGHTS_OFF[1] = minute(tt);
+  LIGHTS_OFF[0] = hour(lights_off);
+  LIGHTS_OFF[1] = minute(lights_off);
   EEPROM.write(3, LIGHTS_OFF[0]);
   EEPROM.write(4, LIGHTS_OFF[1]);
 }
@@ -203,7 +206,7 @@ void changeLightsOFFTimer(long unixTimeStamp)
 
 void setLightsTimer()
 {
-//retrieves values to EEPROM
+//retrieves values from EEPROM
   LIGHTS_ON[0] = EEPROM.read(1);
   LIGHTS_ON[1] = EEPROM.read(2);
   LIGHTS_OFF[0] = EEPROM.read(3); 
@@ -239,10 +242,10 @@ void LightsOFF(){
   fadeToLevel(0);
 }
 
-void setRTCTime(long unixTimeStamp)
+void setRTCTime(long current_time)
 {
-  RTC.set(unixTimeStamp);
-  setTime(unixTimeStamp);
+  RTC.set(current_time);
+  setTime(current_time);
   
 }
 
@@ -259,33 +262,40 @@ void setInterval(byte interval)
  */
 void fadeToLevel( int toLevel ) {
 
-  int delta = ( toLevel - currentLevel ) < 0 ? -1 : 1;
-  while ( currentLevel != toLevel ) {
-    currentLevel += delta;
-    analogWrite( LED_PIN, (int)(currentLevel / 100. * 255) );
+  int delta = ( toLevel - CURRENT_LIGHT_STATUS ) < 0 ? -1 : 1;
+
+  while ( CURRENT_LIGHT_STATUS != toLevel ) {
+    CURRENT_LIGHT_STATUS += delta;
+    analogWrite( LED_PIN, (int)(CURRENT_LIGHT_STATUS / 100. * 255) );
     delay( FADE_DELAY );
   }
 
-  CURRENT_LIGHT_STATUS = toLevel;
   EEPROM.write(9, CURRENT_LIGHT_STATUS);
-  
   sendDataPackage('E');
 }
 
 void sendDataPackage(char cmd){
+    // Send all the data in one package 
     dataPackage.orig_nodeID = nodeID;
     dataPackage.dest_nodeID = masterID;
     dataPackage.counter = counter++;
     dataPackage.cmd = cmd; //R Report, E event
-    dataPackage.unixTimeStamp = now();
+    dataPackage.current_time = now();
+    
+    // sensor data
     dataPackage.temp = dht.getTemperature();
     dataPackage.hum = dht.getHumidity();
     dataPackage.light = analogRead(light_PIN); 
-    dataPackage.led_level = currentLevel;
+
+    // set data
+    dataPackage.set_hum = TEMP; // not yet implemented
+    dataPackage.set_temp = HUM; // not yet implemented
+    dataPackage.set_light = CURRENT_LIGHT_STATUS;
     
-    //dataPackage.lights_on[] = LIGHTS_ON;
-    //dataPackage.lights_off[] = LIGHTS_OFF;
-    //dataPackage.light_mode = DD_MODE;
+    //light timer data
+    dataPackage.lights_on = (LIGHTS_ON[0] * 3600.0) + (LIGHTS_ON[1] * 60.0);
+    dataPackage.lights_off = (LIGHTS_OFF[0] * 3600.0) + (LIGHTS_OFF[1] * 60.0);
+    dataPackage.dd_mode = DD_MODE;
     
     Serial.print(F("Now sending Package "));
      if (!mesh.write( &dataPackage, dataPackage.cmd, sizeof(dataPackage), masterID )){

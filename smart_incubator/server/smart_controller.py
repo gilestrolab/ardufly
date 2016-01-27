@@ -27,23 +27,28 @@ class SerialController(object):
     def _parse_serial_line(self,line):
         logging.debug("Getting line = " + line)
         fields = line.rstrip().split(" ")
-        if len(fields) != 8:
+        if len(fields) != 13:
             logging.warning("Wrong number of fields in serial input. Expect 8, got %i.", len(fields))
             logging.debug('fields = ' + str(fields))
             return
 
-        id, code, counter, device_time, temperature, humidity, light, led_level = fields
-
+        id, code, counter, device_time, temperature, humidity, light, set_temp, set_hum, set_light, lights_on, lights_off, dd_mode = fields
+    
         out = collections.OrderedDict()
         out['id']=int(id)
         out['code']=code
         out['counter']=int(counter)
-	out['device_time']=float(device_time)
-	out['server_time']=time.time()
-	out['temperature']=float(temperature)
-	out['humidity']=float(humidity)
- 	out['light']=float(light)
-  	out['led_level']=int(led_level)
+        out['device_time']=float(device_time)
+        out['server_time']=time.time()
+        out['temperature']=float(temperature)
+        out['humidity']=float(humidity)
+        out['light']=int(light)
+        out['set_temp']=float(set_temp)
+        out['set_hum']=float(set_hum)
+        out['set_light']=int(set_light)
+        out['lights_on']=float(lights_on)
+        out['lights_off']=float(lights_off)
+        out['dd_mode']=['DD', 'LD', 'LL'][int(dd_mode)]
 
         logging.debug(str(out))
         return out
