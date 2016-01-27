@@ -1,0 +1,16 @@
+[Unit]
+Description=Ethoscope node server
+Wants=ntpd.service
+After=ntpd.service
+
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ardufly-git/smart_incubator/server/
+ExecStart=/usr/bin/python2  /opt/ardufly-git/smart_incubator/server/smart_controller.py -o /opt/ardufly-data/smart_incubator.csv
+RestartSec=5
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
