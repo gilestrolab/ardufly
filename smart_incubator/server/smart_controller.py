@@ -48,7 +48,8 @@ class SerialController(object):
         for port in ports:
             try:
                 logging.debug("Scanning %s ..." % port)
-                s = serial.Serial(port,baud,timeout=5)
+                s = serial.Serial(port,baud,timeout=2)
+                time.sleep(2)
                 s.write("HELP\n")
                 line = s.readline()
 
