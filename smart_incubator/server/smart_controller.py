@@ -7,7 +7,7 @@ import logging
 import optparse
 import sys
 import glob
-
+import os
 
 
 class SerialController(object):
@@ -146,14 +146,19 @@ if __name__ == '__main__':
 
     serial_fetcher = SerialController(BAUD, option_dict["port"])
     time.sleep(1)
+
+    is_new_file = not os.path.isfile(option_dict["output"])
     writer = None
     with open(option_dict["output"],"a") as output:
         logging.debug('Output file is ' + option_dict['output'])
         for fields in serial_fetcher:
             # for now lets just do:
-	    if writer is None:
-                 writer = csv.DictWriter(output, fields.keys())
-                 writer.writeheader()
+            if writer is None:
+                writer = csv.DictWriter(output, fields.keys())
+                if is_new_file:
+                    logging.debug("The output file did not exist before. Writing headers")
+                    writer.writeheader()
+
             logging.debug('writing row: ' + str(fields))
             writer.writerow(fields)
             line = ','.join([str(f) for f in fields.values()])
