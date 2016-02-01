@@ -7,8 +7,30 @@
 #include <SPI.h>
 #include <EEPROM.h>
 
-//https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib
-#include <DHT.h>
+#define USE_SENSIRION 1;
+
+#if defined(USE_DHT)
+  //https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib
+  #include <DHT.h>
+  #define DHT_PIN 17
+  DHT dht; 
+#endif
+
+#if defined(USE_SHT1x)
+  //https://github.com/practicalarduino/SHT1x
+  #include <SHT1x.h>
+  #define dataPin 2
+  #define clockPin 3
+  SHT1x sht1x(dataPin, clockPin);
+#endif
+
+#if defined(USE_SENSIRION)
+  ///http://playground.arduino.cc/Code/Sensirion
+  #include <Sensirion.h>
+  #define dataPin 2
+  #define clockPin 3
+  Sensirion sht = Sensirion(dataPin, clockPin);
+#endif
 
 // http://www.pjrc.com/teensy/td_libs_Time.html
 // http://playground.arduino.cc/Code/Time
@@ -32,7 +54,6 @@
 #define masterID 0
 
 // pin for sensors
-#define DHT_PIN 17
 #define light_PIN 16
 
 // pin for LED mosfet
@@ -40,13 +61,12 @@
 #define LED_PIN 5
 
 //Initialising objects and variables
-DHT dht; 
 
 unsigned long counter = 0;
 unsigned long prev_time = 0;
 
-float TEMP = 0;
-float HUM = 0;
+float set_TEMP = 0;
+float set_HUM = 0;
 
 bool DD_MODE = 1;  // 0 = DD,  1 = LD, 2 = LL
 byte LIGHTS_ON[] = { 9, 00 }; 
@@ -72,7 +92,11 @@ void setup()
 
   pinMode(LED_PIN, OUTPUT);
   pinMode(light_PIN, INPUT);
+
+
+#if defined(USE_DHT)  
   dht.setup(DHT_PIN); 
+#endif
 
   //saveTimerValues();
   setSyncProvider(RTC.get);  // get the time from the RTC
@@ -274,6 +298,44 @@ void fadeToLevel( int toLevel ) {
   sendDataPackage('E');
 }
 
+float getTemperature()
+{
+#if defined(USE_DHT)
+    // sensor data for DHT
+    return dht.getTemperature();
+#endif
+#if defined(USE_SHT1x)
+    // sensor data for SHT1x library
+    return sht1x.readTemperatureC();
+#endif
+#if defined(USE_SENSIRION)
+    // sensor data for Sensiron library
+    uint16_t rawData;
+    sht.measTemp(&rawData);                // sht.meas(TEMP, &rawData, BLOCK)
+    return sht.calcTemp(rawData);
+#endif
+}
+
+float getHumidity()
+{
+#if defined(USE_DHT)
+    // sensor data for DHT
+    return dht.getHumidity();
+#endif
+#if defined(USE_SHT1x)
+    // sensor data for SHT1x library
+    return sht1x.readHumidity();
+#endif
+#if defined(USE_SENSIRION)
+    // sensor data for Sensiron library
+    uint16_t rawData;
+    sht.measTemp(&rawData);                // sht.meas(TEMP, &rawData, BLOCK)
+    float temperature = sht.calcTemp(rawData);
+    sht.measHumi(&rawData);                // sht.meas(HUMI, &rawData, BLOCK)
+    return sht.calcHumi(rawData, temperature);
+#endif
+}
+
 void sendDataPackage(char cmd){
     // Send all the data in one package 
     dataPackage.orig_nodeID = nodeID;
@@ -282,14 +344,14 @@ void sendDataPackage(char cmd){
     dataPackage.cmd = cmd; //R Report, E event
     dataPackage.current_time = now();
     
-    // sensor data
-    dataPackage.temp = dht.getTemperature();
-    dataPackage.hum = dht.getHumidity();
+    dataPackage.temp = getTemperature();
+    dataPackage.hum = getHumidity();
+  
     dataPackage.light = analogRead(light_PIN); 
 
     // set data
-    dataPackage.set_hum = TEMP; // not yet implemented
-    dataPackage.set_temp = HUM; // not yet implemented
+    dataPackage.set_hum = set_HUM; // not yet implemented
+    dataPackage.set_temp = set_TEMP; // not yet implemented
     dataPackage.set_light = CURRENT_LIGHT_STATUS;
     
     //light timer data
