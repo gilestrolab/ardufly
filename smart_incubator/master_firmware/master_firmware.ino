@@ -314,7 +314,7 @@ void setTime (){
   //set time on the RTC module of the node - called from serial port
   char *arg;
   int destID = 0;
-  unsigned long unixstamp = 0;
+  time_t unixstamp = 0;
 
   arg = sCmd.next();
   if (arg != NULL) {
