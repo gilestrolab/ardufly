@@ -1,7 +1,7 @@
 //define hardware connection and hard parameters
 #define VERSION 1.5
 #define masterID 0
-#define myID 6
+#define myID 1
 
 // pin for sensors
 #define optoresistor_PIN 15 //A1
@@ -13,7 +13,7 @@
 //define hardware and shields used
 //#define DEBUG 1
 #define USE_SENSIRION 1
-#define USE_SD 1
+//#define USE_SD 1
 #define USE_RADIO 1
 
 #if defined(USE_RADIO)
@@ -23,7 +23,7 @@
   #include "RF24Network.h"
   //https://github.com/TMRh20/RF24Mesh/archive/master.zip
   #include "RF24Mesh.h"
-  //#include <SPI.h>
+  #include <SPI.h>
 #endif
 
 #if defined(USE_SD)
@@ -40,8 +40,6 @@
 
   //https://github.com/greiman/Fat16
   //#include <Fat16.h> // this has the smallest imprint but it is FAT16 only, i.e. max 2G
-
-  
 
   #define SD_CS 10
   #define LOG_FILE "datalog.txt"
@@ -76,8 +74,8 @@
 
 // http://www.pjrc.com/teensy/td_libs_Time.html
 // http://playground.arduino.cc/Code/Time
-//#include <Time.h> 
-//#include <Wire.h>
+#include <Time.h> 
+#include <Wire.h>
 // for RTC see http://www.hobbyist.co.nz/?q=real_time_clock - library from https://github.com/PaulStoffregen/DS1307RTC
 #include <DS1307RTC.h> 
 
