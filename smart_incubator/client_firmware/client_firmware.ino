@@ -1,20 +1,30 @@
+//Without SD
+//2016-03-22
+//Sketch uses 21,426 bytes (66%) of program storage space. Maximum is 32,256 bytes.
+//Global variables use 973 bytes (47%) of dynamic memory, leaving 1,075 bytes for local variables. Maximum is 2,048 bytes.
+
 //define hardware connection and hard parameters
-#define VERSION 1.5
+#define VERSION 1.8
 #define masterID 0
-#define myID 1
+#define myID 10
 
 // pin for sensors
 #define optoresistor_PIN 15 //A1
 
 // pin for LED mosfet
 #define FADE_DELAY 10  // Delay in ms for each percentage fade up/down (10ms = 1s full-range dim)
-#define LED_PIN 5
+#define LED_PIN 6 // Luis' MOSFETS are on 5,6,9,10 - 10 is shared with SD
+
+//pin for PELTIER TEC
+#define PELTIER_PWM 9
+#define PELTIER_DIR 4
 
 //define hardware and shields used
 //#define DEBUG 1
 #define USE_SENSIRION 1
-//#define USE_SD 1
+//#define USE_SD 1 // we do not use SD on regular UNOs because a) we don't need it and b) it takes too much memory
 #define USE_RADIO 1
+#define USE_TEC
 
 #if defined(USE_RADIO)
   //https://github.com/TMRh20/RF24/archive/master.zip
@@ -24,6 +34,11 @@
   //https://github.com/TMRh20/RF24Mesh/archive/master.zip
   #include "RF24Mesh.h"
   #include <SPI.h>
+  
+  #define CMD 'C'
+  #define REPORT 'R'
+  #define EVENT 'E'
+
 #endif
 
 #if defined(USE_SD)
@@ -87,10 +102,10 @@
 unsigned long counter = 0;
 time_t prev_time = 0;
 
-float set_TEMP = 0;
+float set_TEMP = 25;
 float set_HUM = 0;
 
-byte DD_MODE = 1;  // 0 = DD,  1 = LD, 2 = LL
+byte DD_MODE = 1;  // 0 = DD,  1 = LD, 2 = LL, 3 = DL
 byte LIGHTS_ON[] = { 9, 00 }; 
 byte LIGHTS_OFF[] = { 21, 00 }; 
 
@@ -100,7 +115,7 @@ byte CURRENT_LIGHT = 0;
 bool SEND_REPORT = 1;
 byte REPORT_DELAY = 1; // transmission delay in minutes
 
-packageStruct dataPackage = {myID, 0, counter, '-', 0, 0, 0, 0, 0};
+packageStruct dataPackage = {myID, 0, counter, REPORT, 0, 0, 0, 0, 0};
 
 #if defined(USE_RADIO)
   /**** Configure the nrf24l01 CE and CS pins ****/
@@ -109,6 +124,7 @@ packageStruct dataPackage = {myID, 0, counter, '-', 0, 0, 0, 0, 0};
   RF24 radio(RADIO_CE, RADIO_CS);
   RF24Network network(radio);
   RF24Mesh mesh(radio, network);
+  #define MESH_RENEWAL_TIMEOUT 10000 // changing timeout from 60.000 ms to 15.000ms
 #endif
 
 void setup()
@@ -144,18 +160,25 @@ void setup()
   // Connect to the mesh
   mesh.setNodeID(myID);
   Serial.print(F("NRF24L01: "));
-  mesh.begin();
+  mesh.begin(MESH_DEFAULT_CHANNEL, RF24_1MBPS, MESH_RENEWAL_TIMEOUT); 
   Serial.println(F("OK"));
 #endif
   
   //saveTimerValues();
   setSyncProvider(RTC.get);  // get the time from the RTC
-  //saveTimerValues(); // uncomment this when creating a new node
   
   // Retrieves Lights ON/OFF timer values and last light status
-  setLightsTimer(); 
+  retrieveValues(); 
   // In case of power shutdown, this makes sure that light levels are stored at boot time.
+  fadeToLevel(0);
   fadeToLevel(CURRENT_LIGHT);
+  
+#if defined(USE_TEC)
+  // Initialize the PWM and DIR pins as digital outputs.
+  pinMode(PELTIER_PWM, OUTPUT);
+  pinMode(PELTIER_DIR, OUTPUT);
+#endif
+  
 }
 
 
@@ -163,7 +186,8 @@ void loop()
 {
   REPORT_DELAY = (REPORT_DELAY == 0) ? 1 : REPORT_DELAY;
   float delta = REPORT_DELAY * 1000.0 * 60.0;
-
+ 
+  // DD_MODE 0 = DD,  1 = LD, 2 = LL
   byte hh = hour(); byte mm = minute(); byte ss = second();
   if (( DD_MODE != 0 ) and (hh == LIGHTS_ON[0]) and (mm == LIGHTS_ON[1]) and (ss == 00)) { LightsON(); }
   if (( DD_MODE != 2 ) and ( DD_MODE != 2 ) and (hh == LIGHTS_OFF[0]) and (mm == LIGHTS_OFF[1]) and (ss == 00)) { LightsOFF(); }
@@ -178,11 +202,11 @@ void loop()
 #if defined(USE_RADIO)
     // Just before sending the datapackage will re-register on the network
     // This is in case the master has gone down in the meanwhile - closes bug #2
-    mesh.renewAddress();
+    mesh.renewAddress(MESH_RENEWAL_TIMEOUT);
 #endif
     
     // Sending or logging the datapackage
-    sendDataPackage('R');
+    sendDataPackage(REPORT);
   }
 
 #if defined(USE_RADIO)
@@ -193,43 +217,43 @@ void loop()
   
         packageStruct rcvdPackage;
         
-        switch(header.type){
-          case 'I': 
-            network.read(header,&rcvdPackage,sizeof(rcvdPackage)); 
-            if ( rcvdPackage.dest_nodeID == myID ) { sendDataPackage('R'); }
-            break;
-  //        case 'D': 
-  //          network.read(header,&rcvdPackage,sizeof(rcvdPackage)); 
-  //          if ( rcvdPackage.dest_nodeID == myID ) { debug(); }
-  //          break;
-          case 'T': 
-            network.read(header,&rcvdPackage,sizeof(rcvdPackage)); 
-            if ( rcvdPackage.dest_nodeID == myID ) { setRTCTime (rcvdPackage.current_time); }
-            break;
-          case 'L': 
+        if (header.type == CMD) {
+            
             network.read(header,&rcvdPackage,sizeof(rcvdPackage));
-            if ( rcvdPackage.dest_nodeID == myID ) { fadeToLevel (rcvdPackage.set_light); }
-            break;
-          case 'F': 
-            network.read(header,&rcvdPackage,sizeof(rcvdPackage));
-            if ( rcvdPackage.dest_nodeID == myID ) { setInterval (rcvdPackage.set_light); }
-            break;
-          case 'M': 
-            network.read(header,&rcvdPackage,sizeof(rcvdPackage));
-            if ( rcvdPackage.dest_nodeID == myID ) { setLightMode (rcvdPackage.set_light); }
-            break;
-          case '1': 
-            network.read(header,&rcvdPackage,sizeof(rcvdPackage)); 
-            if ( rcvdPackage.dest_nodeID == myID ) { changeLightsONTimer(rcvdPackage.lights_on); }
-            break;
-          case '0': 
-            network.read(header,&rcvdPackage,sizeof(rcvdPackage)); 
-            if ( rcvdPackage.dest_nodeID == myID ) { changeLightsOFFTimer(rcvdPackage.lights_off); }
-            break;
-          default: network.read(header,0,0); Serial.println(header.type);break;
-        }
-    }
+            Serial.print("received command: ");
+            Serial.println(rcvdPackage.cmd);
+           
+            if ( rcvdPackage.cmd == 'I' && rcvdPackage.dest_nodeID == myID ) { sendDataPackage(REPORT); }
+            else if ( rcvdPackage.cmd == 'T' && rcvdPackage.dest_nodeID == myID ) { setRTCTime (rcvdPackage.current_time); }
+            else if ( rcvdPackage.cmd == 'L' && rcvdPackage.dest_nodeID == myID ) { fadeToLevel (rcvdPackage.set_light); }
+            else if ( rcvdPackage.cmd == 'F' && rcvdPackage.dest_nodeID == myID ) { setInterval (rcvdPackage.set_light); }
+            else if ( rcvdPackage.cmd == 'M' && rcvdPackage.dest_nodeID == myID ) { setLightMode (rcvdPackage.set_light); }
+            else if ( rcvdPackage.cmd == '1' && rcvdPackage.dest_nodeID == myID ) { changeLightsONTimer(rcvdPackage.lights_on); }
+            else if ( rcvdPackage.cmd == '0' && rcvdPackage.dest_nodeID == myID ) { changeLightsOFFTimer(rcvdPackage.lights_off); }
+            else if ( rcvdPackage.cmd == 'C' && rcvdPackage.dest_nodeID == myID ) { setTemperature(rcvdPackage.set_temp); }
+            else if ( rcvdPackage.cmd == 'H' && rcvdPackage.dest_nodeID == myID ) { setHumidity(rcvdPackage.set_hum); }
+            else if ( rcvdPackage.cmd == 'X' && rcvdPackage.dest_nodeID == myID ) { setMaxLight(rcvdPackage.set_light); }
+            //elseif ( rcvdPackage.cmd == "D" && rcvdPackage.dest_nodeID == myID ) { debug(); }
+            else { network.read(header,0,0); Serial.println(header.type); }
+        } // end if_command
+                
+    } //endif network
+#endif // use radio
+
+#if defined(USE_TEC)
+
+    float delta_T = getTemperature() - set_TEMP;
+    //int power = map(abs(delta_T), 0, 8, 0, 100); 
+    int power = ( abs(delta_T) / 8.0 ) * 100.0;
+    power > 100 ? power = 100 : power = power;
+
+    //Serial.print("Set Temperature: "); Serial.println(set_TEMP);
+    //Serial.print("Delta: "); Serial.println(delta_T);
+    //Serial.print("Setting peltier (PWM, DIR): "); Serial.println(power*(abs(delta_T)/delta_T ));
+
+    setPeltier(power, (abs(delta_T)/delta_T ) );
 #endif
+
 }
 
 #if defined(DEBUG) // I am leaving this out for space reasons
@@ -237,20 +261,20 @@ void debug(){
   // This works only if the client is actually connected to a computer via the USB
   Serial.print("nodeID: "); Serial.println(myID);
   Serial.print("Time: "); Serial.println(now());
-  setLightsTimer();
+  retrieveValues();
   Serial.print("L ON: "); Serial.print(LIGHTS_ON[0]); Serial.print(":"); Serial.print(LIGHTS_ON[1]); 
   Serial.print(" / L OFF: "); Serial.print(LIGHTS_OFF[0]); Serial.print(":"); Serial.println(LIGHTS_OFF[1]); 
   Serial.print("Report Interval: "); Serial.println(REPORT_DELAY);
   Serial.print("Send report: "); Serial.println(SEND_REPORT);
   Serial.print("DD Mode: "); Serial.println(DD_MODE);
   
-  if ( mesh.checkConnection() ) {  sendDataPackage('R'); }
+  if ( mesh.checkConnection() ) {  sendDataPackage(REPORT); }
 }
 #endif
 
 void setLightMode(int mode)
 {
-  // 0 = DD 1 = LD 2 = LL
+  // 0 = DD 1 = LD 2 = LL 3 = DL
   DD_MODE = mode;
   EEPROM.write(8, DD_MODE);
 }
@@ -272,9 +296,12 @@ void changeLightsOFFTimer(time_t lights_off)
   EEPROM.write(4, LIGHTS_OFF[1]);
 }
 
-
-void setLightsTimer()
+void retrieveValues()
 {
+// on the very first flash, byte 9 is set to 255
+// we use this to save the default values to the arduino
+if (EEPROM.read(9) > 100) { saveTimerValues(); } 
+
 //retrieves values from EEPROM
   LIGHTS_ON[0] = EEPROM.read(1);
   LIGHTS_ON[1] = EEPROM.read(2);
@@ -325,6 +352,28 @@ void setInterval(byte interval)
   EEPROM.write(7, REPORT_DELAY);
 }
 
+void setTemperature(float temp)
+{
+  set_TEMP = temp;
+  //EEPROM.write(6, set_TEMP);
+  sendDataPackage(EVENT);
+}
+
+void setHumidity(float hum)
+{
+  set_HUM = hum;
+  //EEPROM.write(6, set_HUM);
+  sendDataPackage(EVENT);
+}
+
+void setMaxLight(int light)
+{
+  MAX_LIGHT = light;
+  EEPROM.write(5, MAX_LIGHT);
+  sendDataPackage(EVENT);
+}
+
+
 /***
  *  This method provides a graceful fade up/down effect
  */
@@ -339,8 +388,27 @@ void fadeToLevel( int toLevel ) {
   }
 
   EEPROM.write(9, CURRENT_LIGHT);
-  sendDataPackage('E');
+  sendDataPackage(EVENT);
 }
+
+/*
+ * This regulates the output of the PELTIER
+ * PWM 0-100
+ * DIR +1 / -1
+ * DIR OR PWM 0 will halt peltier
+ */
+void setPeltier(int PWM, int direction)
+{
+    analogWrite(PELTIER_PWM, (int)(PWM / 100. * 255));
+    if (direction > 0) { digitalWrite(PELTIER_DIR, HIGH ); }
+    if (direction < 0) { digitalWrite(PELTIER_DIR, LOW ); }
+    
+    if (direction == 0) { 
+        digitalWrite(PELTIER_DIR, LOW ); 
+        analogWrite(PELTIER_PWM, 0);
+        }
+}
+
 
 float getTemperature()
 {
@@ -380,13 +448,13 @@ float getHumidity()
 #endif
 }
 
-void sendDataPackage(char cmd){
+void sendDataPackage(char header_type){
 
     // collect all the data in one package 
     dataPackage.orig_nodeID = myID;
     dataPackage.dest_nodeID = masterID;
     dataPackage.counter = counter++;
-    dataPackage.cmd = cmd; //R Report, E event
+    dataPackage.cmd = header_type; //R Report, E event, C command
     dataPackage.current_time = now();
     
     dataPackage.temp = getTemperature();
@@ -405,7 +473,7 @@ void sendDataPackage(char cmd){
 
 #if defined(USE_RADIO)
     Serial.print(F("RF: "));
-     if (!mesh.write( &dataPackage, dataPackage.cmd, sizeof(dataPackage), masterID )){
+     if (!mesh.write( &dataPackage, 'R', sizeof(dataPackage), masterID )){
        Serial.println(F("FAIL"));
      } else { Serial.println("OK"); }
 #endif
