@@ -1,3 +1,4 @@
+// Client/My_Types.h
 // This external descriptor of data structure is needed in order to be able to pass the data structure as
 // variable to functions. Without this external file, for some reason, it would not work.
 
