@@ -19,8 +19,12 @@
 #include "MyTypes.h"
 
 //defines
-#define VERSION 1.0
+#define VERSION 1.2
 #define masterID 0
+
+#define CMD 'C'
+#define REPORT 'R'
+#define EVENT 'E'
 
 //Initialising objects
 SerialCommand sCmd;
@@ -32,7 +36,7 @@ RF24Mesh mesh(radio, network);
 
 //some vars and consts
 unsigned long counter = 0;
-packageStruct dataPackage = {masterID, 0, counter, '-', 0, 0, 0, 0, 0};
+packageStruct dataPackage = {masterID, 0, counter, CMD, 0, 0, 0, 0, 0};
 
 void setup()
 {
@@ -41,9 +45,6 @@ void setup()
 
   mesh.setNodeID(masterID);
   mesh.begin();
-
-  //Serial.println("Ready.");
-  
 }
 
 void loop()
@@ -61,11 +62,11 @@ void loop()
         packageStruct rcvdPackage;
         switch(header.type){
           // Display the incoming millis() values from the sensor nodes
-          case 'R': // regular, timed report
+          case REPORT: // regular, timed report
               network.read(header,&rcvdPackage,sizeof(rcvdPackage)); 
               transmitData(&rcvdPackage);
               break;
-          case 'E': // event (e.g. lights on or off)
+          case EVENT: // event (e.g. lights on or off)
               network.read(header,&rcvdPackage,sizeof(rcvdPackage)); 
               transmitData(&rcvdPackage);
               break;
@@ -86,6 +87,9 @@ void setupSerialCommands() {
   sCmd.addCommand("0",     setLightsOFFTimer);
   sCmd.addCommand("D",     demandDebug);
   sCmd.addCommand("M",     setLightMode);
+  sCmd.addCommand("C",    setTemperature);
+  sCmd.addCommand("H",    setHumidity);
+  sCmd.addCommand("X",    setMaxLight);
   sCmd.setDefaultHandler(printError);      // Handler for command that isn't matched  (says "What?")
 }
 
@@ -98,6 +102,9 @@ void printHelp() {
   Serial.println("F ID mm               Set interval (minutes) between reports from node ID");
   Serial.println("1 ID timestamp        Set time for Lights ON  - uses only HH:MM component");
   Serial.println("0 ID timestamp        Set time for Lights OFF - uses only HH:MM component");
+  Serial.println("C ID temperature     Set temperature on node ID");
+  Serial.println("H ID humidity        Set humidity on node ID");
+  Serial.println("X ID light           Set max light value on node ID");
   Serial.println("==================================================================================");
 }
 
@@ -151,8 +158,8 @@ void printPackage(packageStruct* rcvdPackage) {
 }
 
 void setDelay(){
-  // Changes the frequency of spontaneous reports from nodeID. 
-  // A frequency of 0 will inactivate reports
+  // Changes the interval (in minutes) of spontaneous reports from nodeID. 
+  // An interval of 0 will inactivate reports
   char *arg;
   int destID = 0;
   int interval = 0;
@@ -170,18 +177,18 @@ void setDelay(){
   dataPackage.orig_nodeID = masterID;
   dataPackage.dest_nodeID = destID;
   dataPackage.counter = counter++;
-  dataPackage.cmd = 'F'; //R Report, T UpdateTime, L UpdateLight, S Update timer, F update interval
+  dataPackage.cmd = 'F';
   dataPackage.set_light = interval;
 
   Serial.print(F("Now sending Package "));
-     if (!mesh.write( &dataPackage, dataPackage.cmd, sizeof(dataPackage), destID )){
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
        Serial.println(F("failed"));
      } else { Serial.println("OK"); }
 }
 
 void setLightMode(){
-  // Changes the frequency of spontaneous reports from nodeID. 
-  // A frequency of 0 will inactivate reports
+  // Change the light mode 
+  // 0 DD, 1 LD, 2 LL
   char *arg;
   int destID = 0;
   int mode = 1;
@@ -199,11 +206,11 @@ void setLightMode(){
   dataPackage.orig_nodeID = masterID;
   dataPackage.dest_nodeID = destID;
   dataPackage.counter = counter++;
-  dataPackage.cmd = 'M'; //R Report, T UpdateTime, L UpdateLight, S Update timer, F update interval
+  dataPackage.cmd = 'M';
   dataPackage.set_light = mode;
 
   Serial.print(F("Now sending Package "));
-     if (!mesh.write( &dataPackage, dataPackage.cmd, sizeof(dataPackage), destID )){
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
        Serial.println(F("failed"));
      } else { Serial.println("OK"); }
 }
@@ -229,11 +236,11 @@ void setLightsONTimer(){
   dataPackage.orig_nodeID = masterID;
   dataPackage.dest_nodeID = destID;
   dataPackage.counter = counter++;
-  dataPackage.cmd = '1'; //R Report, T UpdateTime, L UpdateLight, S Update timer
+  dataPackage.cmd = '1';
   dataPackage.lights_on = lights_on;
 
   Serial.print(F("Now sending Package "));
-     if (!mesh.write( &dataPackage, dataPackage.cmd, sizeof(dataPackage), destID )){
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
        Serial.println(F("failed"));
      } else { Serial.println("OK"); }
 }
@@ -257,11 +264,11 @@ void setLightsOFFTimer(){
   dataPackage.orig_nodeID = masterID;
   dataPackage.dest_nodeID = destID;
   dataPackage.counter = counter++;
-  dataPackage.cmd = '0'; //R Report, T UpdateTime, L UpdateLight, S Update timer
+  dataPackage.cmd = '0';
   dataPackage.lights_off = lights_off;
 
   Serial.print(F("Now sending Package "));
-     if (!mesh.write( &dataPackage, dataPackage.cmd, sizeof(dataPackage), destID )){
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
        Serial.println(F("failed"));
      } else { Serial.println("OK"); }
 }
@@ -279,10 +286,10 @@ void getState (){
   dataPackage.orig_nodeID = masterID;
   dataPackage.dest_nodeID = destID;
   dataPackage.counter = counter++;
-  dataPackage.cmd = 'I'; //R Report, T UpdateTime, L UpdateLight, S Update timer
+  dataPackage.cmd = 'I';
 
   Serial.print(F("Now sending Package "));
-     if (!mesh.write( &dataPackage, dataPackage.cmd, sizeof(dataPackage), destID )){
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
        Serial.println(F("failed"));
      } else { Serial.println("OK"); }
 
@@ -301,10 +308,10 @@ void demandDebug (){
   dataPackage.orig_nodeID = masterID;
   dataPackage.dest_nodeID = destID;
   dataPackage.counter = counter++;
-  dataPackage.cmd = 'D'; //R Report, T UpdateTime, L UpdateLight, S Update timer
+  dataPackage.cmd = 'D';
 
   Serial.print(F("Now sending Package "));
-     if (!mesh.write( &dataPackage, dataPackage.cmd, sizeof(dataPackage), destID )){
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
        Serial.println(F("failed"));
      } else { Serial.println("OK"); }
 
@@ -329,11 +336,11 @@ void setTime (){
   dataPackage.orig_nodeID = masterID;
   dataPackage.dest_nodeID = destID;
   dataPackage.counter = counter++;
-  dataPackage.cmd = 'T'; //R Report, T UpdateTime, L UpdateLight, S Update timer
+  dataPackage.cmd = 'T';
   dataPackage.current_time = unixstamp;
 
   Serial.print(F("Now sending Package "));
-     if (!mesh.write( &dataPackage, dataPackage.cmd, sizeof(dataPackage), destID )){
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
        Serial.println(F("failed"));
      } else { Serial.println("OK"); }
 }
@@ -357,11 +364,97 @@ void setLight (){
   dataPackage.orig_nodeID = masterID;
   dataPackage.dest_nodeID = destID;
   dataPackage.counter = counter++;
-  dataPackage.cmd = 'L'; //R Report, T UpdateTime, L UpdateLight, S Update timer
+  dataPackage.cmd = 'L'; 
   dataPackage.set_light = light_level;
-    
+
   Serial.print(F("Now sending Package: "));
-     if (!mesh.write( &dataPackage, dataPackage.cmd, sizeof(dataPackage), destID )){
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
+       Serial.println(F("failed"));
+     } else { Serial.println("OK"); }
+}
+
+void setTemperature(){
+    
+  // set the current Temperature on node
+  char *arg;
+  int destID = 0;
+  float set_TEMP = 0;
+  
+  arg = sCmd.next();
+  if (arg != NULL) {
+    destID = atoi(arg);
+  }
+
+  arg = sCmd.next();
+  if (arg != NULL) {
+    set_TEMP = atof(arg);
+  }
+
+  dataPackage.orig_nodeID = masterID;
+  dataPackage.dest_nodeID = destID;
+  dataPackage.counter = counter++;
+  dataPackage.cmd = 'C';
+  dataPackage.set_temp = set_TEMP;
+
+  Serial.print(F("Now sending Package: "));
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
+       Serial.println(F("failed"));
+     } else { Serial.println("OK"); }
+}
+
+void setHumidity(){
+    
+  // set the current Humidity on node
+  char *arg;
+  int destID = 0;
+  float set_HUM = 0;
+  
+  arg = sCmd.next();
+  if (arg != NULL) {
+    destID = atoi(arg);
+  }
+
+  arg = sCmd.next();
+  if (arg != NULL) {
+    set_HUM = atof(arg);
+  }
+
+  dataPackage.orig_nodeID = masterID;
+  dataPackage.dest_nodeID = destID;
+  dataPackage.counter = counter++;
+  dataPackage.cmd = 'H'; 
+  dataPackage.set_hum = set_HUM;
+
+  Serial.print(F("Now sending Package: "));
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
+       Serial.println(F("failed"));
+     } else { Serial.println("OK"); }
+}
+
+void setMaxLight (){
+  // Set the maximum level of lights allowed
+  char *arg;
+  int destID = 0;
+  int light_level = 0;
+  
+  arg = sCmd.next();
+  if (arg != NULL) {
+    destID = atoi(arg);
+  }
+
+  arg = sCmd.next();
+  if (arg != NULL) {
+    light_level = atoi(arg);
+  }
+
+  dataPackage.orig_nodeID = masterID;
+  dataPackage.dest_nodeID = destID;
+  dataPackage.counter = counter++;
+  dataPackage.cmd = 'X'; 
+  dataPackage.set_light = light_level;
+
+  Serial.print(F("Now sending Package: "));
+     if (!mesh.write( &dataPackage, CMD, sizeof(dataPackage), destID )){
        Serial.println(F("failed"));
      } else { Serial.println("OK"); }
 }
