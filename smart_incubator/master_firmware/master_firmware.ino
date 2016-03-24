@@ -19,7 +19,7 @@
 #include "MyTypes.h"
 
 //defines
-#define VERSION 1.2
+#define VERSION 1.3
 #define masterID 0
 
 #define CMD 'C'
@@ -95,16 +95,16 @@ void setupSerialCommands() {
 
 void printHelp() {
   Serial.println("HELP                  Print this help message");
-  Serial.println("M ID DD / LD / LL     Set light mode to DD, LD, LL");
+  Serial.println("M ID DD               Set light mode to DD, LD, LL, DL, 00");
   Serial.println("T ID timestamp        Set time on node ID");
   Serial.println("L ID light (0-100)    Set light levels on node ID");
   Serial.println("I ID                  Interrogates node ID");
   Serial.println("F ID mm               Set interval (minutes) between reports from node ID");
   Serial.println("1 ID timestamp        Set time for Lights ON  - uses only HH:MM component");
   Serial.println("0 ID timestamp        Set time for Lights OFF - uses only HH:MM component");
-  Serial.println("C ID temperature     Set temperature on node ID");
-  Serial.println("H ID humidity        Set humidity on node ID");
-  Serial.println("X ID light           Set max light value on node ID");
+  Serial.println("C ID temperature      Set temperature on node ID");
+  Serial.println("H ID humidity         Set humidity on node ID");
+  Serial.println("X ID light            Set max light value on node ID");
   Serial.println("==================================================================================");
 }
 
@@ -199,9 +199,11 @@ void setLightMode(){
   }
 
   arg = sCmd.next();
-  if ((arg != NULL) and (strcmp (arg,"DD") == 0) ){ mode = 0; };
-  if ((arg != NULL) and (strcmp (arg,"LD") == 0) ){ mode = 1; };
-  if ((arg != NULL) and (strcmp (arg,"LL") == 0) ){ mode = 2; };
+  if ((arg != NULL) and (strcmp (arg,"DD") == 0)){ mode = 0; };
+  if ((arg != NULL) and (strcmp (arg,"LD") == 0)){ mode = 1; };
+  if ((arg != NULL) and (strcmp (arg,"LL") == 0)){ mode = 2; };
+  if ((arg != NULL) and (strcmp (arg,"DL") == 0)){ mode = 3; };
+  if ((arg != NULL) and (strcmp (arg,"00") == 0)){ mode = 4; };
 
   dataPackage.orig_nodeID = masterID;
   dataPackage.dest_nodeID = destID;
