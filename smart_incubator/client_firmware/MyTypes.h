@@ -27,5 +27,24 @@ typedef struct{
   byte dd_mode;
 } packageStruct;
 
+typedef struct{
+  int lights_on;
+  int lights_off;
+  
+  byte max_light;
+  byte dd_mode;
+  
+  bool send_report;
+  byte report_delay;
+  
+  float set_temp;
+  float set_hum;
+} configuration;
+
+typedef struct{
+  float temperature;
+  float humidity;
+  int	light;
+} environment;
 #endif
 
