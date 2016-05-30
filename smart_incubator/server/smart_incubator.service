@@ -1,5 +1,5 @@
 [Unit]
-Description=Ethoscope node server
+Description=Smart incubator server
 Wants=ntpd.service
 After=ntpd.service
 
