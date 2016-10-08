@@ -19,8 +19,9 @@
 #include "MyTypes.h"
 
 //defines
-#define VERSION 1.3
+#define VERSION 1.4
 #define masterID 0
+#define SENSORS //use sensors on board
 
 #define CMD 'C'
 #define REPORT 'R'
@@ -38,8 +39,25 @@ RF24Mesh mesh(radio, network);
 unsigned long counter = 0;
 packageStruct dataPackage = {masterID, 0, counter, CMD, 0, 0, 0, 0, 0};
 
+#if defined (SENSORS)
+#define optoresistor_PIN 15 //A1
+#include <SHT1x.h>
+#define HT_PIN 17 //A3
+#define clockPin 16 //A2
+
+SHT1x sht1x(HT_PIN, clockPin);
+time_t prev_time = 0;
+float DELTA = 5 * 60.0 * 1000.0; // delta between reports, in milliseconds - default 5 mins
+unsigned long report_counter = 0;
+#endif
+
+
 void setup()
 {
+#if defined (SENSORS)
+  pinMode(optoresistor_PIN, INPUT);
+#endif
+
   Serial.begin(115200);
   setupSerialCommands();
 
@@ -73,7 +91,30 @@ void loop()
           default: network.read(header,0,0); Serial.println(header.type);break;
         }
     }
- sCmd.readSerial(); 
+ sCmd.readSerial();
+
+#if defined(SENSORS)
+  if ( (millis() - prev_time) > DELTA or prev_time == 0 )  {
+    prev_time = millis();
+    reportMasterReadings();
+  }
+#endif
+}
+
+void reportMasterReadings(){
+    report_counter = report_counter+1;
+    float temperature =  sht1x.readTemperatureC();
+    float humidity = sht1x.readHumidity();
+    int light = analogRead(optoresistor_PIN);
+
+    Serial.print( masterID ); Serial.print (" ");
+    Serial.print( REPORT ); Serial.print (" ");
+    Serial.print( report_counter ); Serial.print (" ");
+    Serial.print( now() ); Serial.print (" ");
+    Serial.print( temperature ); Serial.print (" ");
+    Serial.print( humidity ); Serial.print (" ");
+    Serial.print( light );
+    Serial.println( " 0 0 0 0 0 0"); //this tail is to give similar structure to data.
 }
 
 void setupSerialCommands() {
@@ -90,6 +131,7 @@ void setupSerialCommands() {
   sCmd.addCommand("C",    setTemperature);
   sCmd.addCommand("H",    setHumidity);
   sCmd.addCommand("X",    setMaxLight);
+  sCmd.addCommand("R",    reportMasterReadings);
   sCmd.setDefaultHandler(printError);      // Handler for command that isn't matched  (says "What?")
 }
 
@@ -105,6 +147,7 @@ void printHelp() {
   Serial.println("C ID temperature      Set temperature on node ID");
   Serial.println("H ID humidity         Set humidity on node ID");
   Serial.println("X ID light            Set max light value on node ID");
+  Serial.println("R                     Report readings from Master node");
   Serial.println("==================================================================================");
 }
 
