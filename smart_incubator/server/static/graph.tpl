@@ -49,7 +49,7 @@
     <script type="text/javascript">
         
     $(document).ready(function(){ 
-            loadGraphs({{incubator_id}});
+            loadGraphs({{incubator_id}}, 1);
             loadIncubatorForm({{incubator_id}});
             show_alert_box();
         });  

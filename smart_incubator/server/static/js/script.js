@@ -87,9 +87,9 @@ function show_alert_box() {
     
 }
 
-function loadGraphs(incubator_id){
+function loadGraphs(incubator_id, days){
         $.ajax({
-            url: "/incubator/"+incubator_id+"/1",
+            url: "/incubator/"+incubator_id+"/"+days,
             dataType: 'JSON',
             data: {get_values: true},
             success: function(response) {
