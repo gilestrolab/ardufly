@@ -204,7 +204,7 @@ class SerialController(threading.Thread):
             return
 
         id, command, counter, device_time, temperature, humidity, light, set_temp, set_hum, set_light, lights_on, lights_off, dd_mode = fields
-        #if int(id) == 0 : device_time = time.time()
+        if int(id) == 0 : device_time = time.time()
     
         out = collections.OrderedDict()
         out['id'] = int(id)
@@ -231,7 +231,7 @@ class SerialController(threading.Thread):
         now = int(round(time.time()))
         if abs(device_time - now) > self._delta_time_threshold and device_id > 0:
             logging.warning("Current time is %i, but time on device %i is %i, syncing this device"% (now, device_id, device_time))
-            return self.sendCommand(device_id, cmd='set_time', value=snow)
+            return self.sendCommand(device_id, cmd='set_time', value=now)
 
     def _write_row_to_file(self, fields):
         """
@@ -479,7 +479,7 @@ if __name__ == '__main__':
         serial_fetcher = SerialController(option_dict["port"], db_credentials=db_credentials)
 
     if option_dict['web']:
-        server = webServer(host='localhost', port=8090, serial_fetcher=serial_fetcher)
+        server = webServer(host='0.0.0.0', port=8090, serial_fetcher=serial_fetcher)
         server.start()
     else:
         serial_fetcher.start()
