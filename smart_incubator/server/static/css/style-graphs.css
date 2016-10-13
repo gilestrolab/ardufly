@@ -1,0 +1,191 @@
+/*--
+Author: W3layouts
+Author URL: http://w3layouts.com
+License: Creative Commons Attribution 3.0 Unported
+License URL: http://creativecommons.org/licenses/by/3.0/
+--*/
+/* reset */
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,dl,dt,dd,ol,nav ul,nav li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,menu,nav,output,ruby,section,summary,time,mark,audio,video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline;}
+article, aside, details, figcaption, figure,footer, header, hgroup, menu, nav, section {display: block;}
+ol,ul{list-style:none;margin:0px;padding:0px;}
+blockquote,q{quotes:none;}
+blockquote:before,blockquote:after,q:before,q:after{content:'';content:none;}
+table{border-collapse:collapse;border-spacing:0;}
+/* start editing from here */
+a{text-decoration:none;}
+.txt-rt{text-align:right;}/* text align right */
+.txt-lt{text-align:left;}/* text align left */
+.txt-center{text-align:center;}/* text align center */
+.float-rt{float:right;}/* float right */
+.float-lt{float:left;}/* float left */
+.clear{clear:both;}/* clear float */
+.pos-relative{position:relative;}/* Position Relative */
+.pos-absolute{position:absolute;}/* Position Absolute */
+.vertical-base{	vertical-align:baseline;}/* vertical align baseline */
+.vertical-top{	vertical-align:top;}/* vertical align top */
+nav.vertical ul li{	display:block;}/* vertical menu */
+nav.horizontal ul li{	display: inline-block;}/* horizontal menu */
+img{max-width:100%;}
+/*end reset*/
+html, body{
+    font-size: 100%;
+	background:	#f8f8f8;
+	font-family: 'Varela Round', sans-serif;
+}
+h1,h2,h3,h4,h5,h6,a,p{
+	font-family: 'Varela Round', sans-serif;
+	margin:0;
+}
+ul,label{
+	margin:0;
+	padding:0;
+}
+body a:hover,body a{
+	text-decoration:none;
+} 
+body h1 {
+    text-align: center;
+    margin: 1em 0 1em 0;
+    color: #fff;
+    font-size:3.1em;
+    font-weight: 300;
+	letter-spacing:4px;
+}
+/*--graph--*/
+.main{
+	margin:0 auto;
+	text-align:center;width:50%;
+}
+.w3l-agile h3 {
+    color: #555;
+    text-transform: uppercase;
+    font-size: 1.2em;
+    margin-top: 10px;
+}
+.graph{
+	background:#fff;
+	padding:1em;
+	width:100%;
+	    box-shadow: 0 8px 17px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+}
+.copyright{
+	text-align:center;
+}
+.graph.lost {
+    margin-top:2em;
+}
+.copyright p{
+	font-size: 15px;
+	color:#fff;
+	margin:4em 0 4.5em;
+	line-height:1.8em;
+}
+.copyright p a{
+	color:#80C340;
+}
+.copyright p a:hover{
+	text-decoration:underline;
+}
+
+/*-- start-responsive-design --*/
+
+@media (max-width:1440px){
+	
+}
+@media (max-width:1366px){
+body h1 {
+		margin: 1em 0 1em 0;
+		font-size: 2.5em;
+	}
+}
+@media (max-width:1280px){
+
+}
+@media (max-width:1024px){
+
+}
+@media (max-width:800px){
+.main {
+    margin: 0 auto;
+    text-align: center;
+    width: 68%;
+}
+}
+@media (max-width:768px){
+
+}
+@media (max-width: 736px){
+
+}
+@media (max-width:667px){
+	body h1 {
+		margin: 1em 0 1em 0;
+		font-size: 2em;
+	}
+}
+@media (max-width:640px){
+
+}
+@media (max-width: 600px){
+	.copyright p {
+		font-size: 14px;
+		margin: 2em 0 1.5em;
+	}
+}
+@media (max-width:568px){
+	.main {
+		margin: 0 auto;
+		text-align: center;
+		width: 80%;
+	}
+	.w3l-agile h3 {
+		font-size: 1em;
+		margin-top: 10px;
+	}
+}
+@media (max-width:480px){
+
+}
+@media (max-width:414px){
+	.graph {
+		padding: 0.5em 0;
+	}
+}
+@media (max-width:384px){
+	body h1 {
+		margin: 1em 0 1em 0;
+		font-size: 1.7em;
+	}
+	.main {
+		margin: 0 auto;
+		text-align: center;
+		width: 88%;
+	}
+}
+@media (max-width:375px){
+	.main {
+		margin: 0 auto;
+		text-align: center;
+		width: 94%;
+	}
+	body h1 {
+		margin: 0.7em 0 0.7em 0;
+		font-size: 1.5em;
+	}
+	.graph {
+		padding:0.5em;
+		width: 95%;
+		
+	}
+}
+@media (max-width: 320px){
+	.main {
+		margin: 0 auto;
+		text-align: center;
+		width: 94%;
+	}
+	body h1 {
+		margin: 0.7em 0 0.7em 0;
+		font-size: 1.4em;
+	}
+}

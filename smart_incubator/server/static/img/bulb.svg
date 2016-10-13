@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- License Agreement at http://iconmonstr.com/license/ -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   x="0px"
+   y="0px"
+   width="512px"
+   height="512px"
+   viewBox="0 0 512 512"
+   enable-background="new 0 0 512 512"
+   xml:space="preserve"
+   id="svg2"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="bulb.svg"><metadata
+     id="metadata9"><rdf:RDF><cc:Work
+         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+     id="defs7" /><sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="746"
+     inkscape:window-height="480"
+     id="namedview5"
+     showgrid="false"
+     inkscape:zoom="0.4609375"
+     inkscape:cx="256"
+     inkscape:cy="256"
+     inkscape:window-x="2805"
+     inkscape:window-y="268"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg2" /><path
+     id="light-bulb-17-icon"
+     d="M292.2,381.263h-72.511c-5.082,0-9.202,4.12-9.202,9.202c0,5.083,4.12,9.203,9.202,9.203H292.2  c5.083,0,9.203-4.12,9.203-9.203C301.403,385.383,297.283,381.263,292.2,381.263z M290.545,411.901h-69.199  c-5.082,0-9.202,4.12-9.202,9.202s4.12,9.201,9.202,9.201h69.2c5.081,0,9.201-4.119,9.201-9.201S295.627,411.901,290.545,411.901z   M221.819,442.111C239.735,458.673,241.579,462,248.731,462h13.775c6.989,0,8.713-3.083,27.564-19.889H221.819z M360.699,221.629  c0,62.305-53.581,97.22-53.581,146.388H204.772c0-49.168-53.582-84.083-53.582-146.388  C151.19,87.725,360.699,87.589,360.699,221.629z M269.202,95.112H244.14V50h25.062V95.112z M355.264,73.97L333.18,62.12  l-22.055,41.103l22.084,11.85L355.264,73.97z M419.356,136.042l-14.599-20.371l-40.101,28.738l14.6,20.371L419.356,136.042z   M423.782,294.141l-45.116-18.277l-9.41,23.228l45.116,18.278L423.782,294.141z M438.789,205.555h-51.126v25.062h51.126V205.555z   M200.875,103.223L178.82,62.12l-22.084,11.85l22.055,41.103L200.875,103.223z M147.343,144.409l-40.101-28.738l-14.599,20.371  l40.1,28.738L147.343,144.409z M143.177,296.9L132.9,274.043l-45.116,20.283l10.277,22.857L143.177,296.9z M124.337,205.555H73.211  v25.062h51.126V205.555z"
+     style="fill:#777777;fill-opacity:1" /></svg>
