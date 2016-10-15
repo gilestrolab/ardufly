@@ -3,7 +3,15 @@ function loadDashboard(){
           function(data) {
             $.each(data, function(i, item) {
                 
-                var time = moment(item.device_time*1000).format("DD-MM-YYYY HH:mm");
+                is_timestamp = new Date(item.device_time*1000).getTime() > 0;
+                if (is_timestamp) { 
+                    var timestamp = item.device_time;
+                } else {
+                    var k = moment(item.device_time);
+                    var timestamp = (k + k.utcOffset()*60*1000)/1000;
+                }
+               var time = moment(timestamp*1000).format("DD-MM-YYYY HH:mm");                
+                
                 $('#main').append('\
                     <div class="incubator" id="'+item.id+'">\
                         <h2><a href="/graph/'+item.id+'">Incubator '+item.id+'</a></h2>\
@@ -20,7 +28,16 @@ function loadDashboard(){
 function loadIncubatorForm(incubator_id){
      $.getJSON("/json/" + incubator_id, 
           function(data) {
-                var time = moment(data.device_time*1000).format("DD-MM-YYYY HH:mm");
+
+                is_timestamp = new Date(data.device_time*1000).getTime() > 0;
+                if (is_timestamp) { 
+                    var timestamp = data.device_time;
+                } else {
+                    var k = moment(data.device_time);
+                    var timestamp = (k + k.utcOffset()*60*1000)/1000;
+                }
+                var time = moment(timestamp*1000).format("DD-MM-YYYY HH:mm");                
+
                 $('#incubator-data').append('\
                             <form class="incubator-form" method="post">\
                             <p>Incubator '+data.id+' - Last reading: '+time+'</p>\
@@ -121,8 +138,10 @@ function checkTimeValues(){
         
         if (delta >= alert_range) { 
             $(this).find('p').css('color','#934c4c');
+            $(this).find('p').css('font-weight','bold');
         } else {
             $(this).find('p').css('color','#777');
+            $(this).find('p').css('font-weight','normal');
         }
     })
     window.setTimeout(checkTimeValues,1000)

@@ -144,10 +144,12 @@ class mySQLDatabase():
         """
         if incubator == 'all' or incubator < 0:
             select_query = "SELECT * FROM incubators.incubators WHERE device_time IN (SELECT MAX(device_time) FROM incubators.incubators GROUP BY id) ORDER BY id;"
+            data = self.query(select_query)
+
         else:
             select_query = "SELECT * FROM incubators WHERE id = %s ORDER BY device_time DESC LIMIT 1;" % incubator
-             
-        data = self.query(select_query)
+            data = self.query(select_query)[0]
+
         return data
  
 class SerialController(threading.Thread):
@@ -304,7 +306,7 @@ class SerialController(threading.Thread):
         """
         """
         if self._database:
-            if json_mode:
+            if json_mode or (incubator != 'all' and incubator >= 0 ):
                 return json.dumps(self._database.retrieve_last_line(incubator))
             else:
                 return self._database.retrieve_last_line(incubator)
