@@ -24,7 +24,7 @@
 
 import serial
 import time, random
-import optparse
+import argparse
 
 """
 This is used for debugging
@@ -74,17 +74,18 @@ def transfer_file(port, filename, downsample=5, verbose=False):
 
 if __name__ == '__main__':            
 
-    parser = optparse.OptionParser()
+    parser = argparse.ArgumentParser(description="Comunicates with the incubator server through a virtual serial port")
 
-    parser.add_option("-p", "--port", dest="port", default=None,help="Serial port to write to")
-    parser.add_option("-f", "--file", dest="filename", default=None, help="Transfer data from filename")
-    parser.add_option("-r", "--random", dest="random", default=False, help="Use random mode", action="store_true")
+    parser.add_argument("-p", "--port", help="Serial port to write to", required=True)
+    parser.add_argument("-f", "--file", help="Transfer data from filename" )
+    parser.add_argument("-r", "--random", default=False, help="Use random mode", action="store_true")
 
 
-    (options, args) = parser.parse_args()
-    option_dict = vars(options)
+    args = parser.parse_args()
+    
 
-    if option_dict['random'] and option_dict['port']: random_values(option_dict['port'])
-    if option_dict['filename'] and option_dict['port']: transfer_file( option_dict['port'], option_dict['filename'])
+    if args.random and args.port: random_values(args.port)
+    elif args.filename and args.port: transfer_file( args.port, args.filename)
+    else: parser.printHelp()
     
 
