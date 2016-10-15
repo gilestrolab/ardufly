@@ -51,8 +51,17 @@ function refreshDashboard(){
           function(data) {
             $.each(data, function(i, item) {
                 
-                var time = moment(item.device_time*1000).format("DD-MM-YYYY HH:mm");
-                var temperature = item.temperature;
+                is_timestamp = new Date(item.device_time*1000).getTime() > 0;
+                
+                if (is_timestamp) { 
+                    var timestamp = item.device_time;
+                } else {
+                    var k = moment(item.device_time);
+                    var timestamp = (k + k.utcOffset()*60*1000)/1000;
+                }
+
+               var time = moment(timestamp*1000).format("DD-MM-YYYY HH:mm");
+               var temperature = item.temperature;
                 
                 if (Math.abs(item.temperature - item.set_temp ) > 0.5) 
                     { $('#' + item.id).find('.temperature').css('color','#934c4c'); }
@@ -72,13 +81,52 @@ function refreshDashboard(){
             $('#' + item.id).find('.humidity').html(item.humidity);
             $('#' + item.id).find('.humidity').attr('title', item.humidity + " / " + item.set_hum);
             
-            $('#' + item.id).find('.time').find("p").html(time);
+            $('#' + item.id).find('.time').find("p").html(item.device_time);
+            $('#' + item.id).find('.time').attr('title', timestamp);
 
             })
           }); 
-     window.setTimeout(refreshDashboard,5000);
+     window.setTimeout(refreshDashboard,10000);
   }
 
+function refreshSerialMonitor(){
+    
+      updateClock();
+      $.getJSON(
+            "/json/serial",
+            function (data) { 
+                  $('#serialoutput').val(data.result);
+            }
+        );            
+      window.setTimeout(refreshSerialMonitor,1000);
+}
+
+function updateClock() {
+    $('.current-time').text(moment().utc());
+}
+
+function checkTimeValues(){
+    
+
+    var now = moment().utc();
+    updateClock();
+    
+    $('.time').each( function (i) {
+        
+        var timestamp = $(this).attr('title');
+        var time = moment( timestamp * 1000);
+        var delta = now - time; // in ms
+
+        alert_range = 15 * 60 * 1000; //15minutes
+        
+        if (delta >= alert_range) { 
+            $(this).find('p').css('color','#934c4c');
+        } else {
+            $(this).find('p').css('color','#777');
+        }
+    })
+    window.setTimeout(checkTimeValues,1000)
+}
 
 function show_alert_box() {
 

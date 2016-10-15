@@ -116,6 +116,23 @@ class mySQLDatabase():
         data = self.query(select_query)
         return data
 
+    def getAllIDs(self):
+        """
+        """
+        select_query = "SELECT DISTINCT(id) as id FROM incubators ORDER BY id ASC;"
+        data = self.query(select_query)
+        return [i['id'] for i in data]
+
+    def retrieve_last_line(self, incubator):
+        """
+        """
+        if incubator == 'all' or incubator < 0:
+            select_query = "SELECT * FROM incubators.incubators WHERE device_time IN (SELECT MAX(device_time) FROM incubators.incubators GROUP BY id) ORDER BY id;"
+        else:
+            select_query = "SELECT * FROM incubators WHERE id = %s ORDER BY device_time DESC LIMIT 1;" % incubator
+            
+        data = self.query(select_query)
+        return data
 
 class SerialController(threading.Thread):
     def __init__(self, port=None, baud=115200, filename=None, db_credentials=None):
@@ -132,7 +149,9 @@ class SerialController(threading.Thread):
         self._delta_time_threshold = 15 # we sync time when and only when device had drifter more than this value (seconds)
         self._dd_mode_map = {0:'DD', 1:'LD', 2:'LL', 3:'DL', 4:'MM'}
        
-        self._datatail = collections.deque(maxlen=100) #keeps last 100 lines in memory
+        self._datatail = collections.deque(maxlen=100) #keeps last 100 lines in memory as dict
+        self._serial_queue = collections.deque(maxlen=100) #keeps last 100 lines in memory as raw lines
+        
         self._is_stopped = False
 
         self._filename = filename
@@ -265,8 +284,21 @@ class SerialController(threading.Thread):
         if self._database:
             return self._database.retrieve_day(incubator, days)
                 
-    
     def getlastData(self, incubator, json_mode=True):
+        """
+        """
+        if self._database:
+            if json_mode:
+                return json.dumps(self._database.retrieve_last_line(incubator))
+            else:
+                return self._database.retrieve_last_line(incubator)
+                
+    def getSerialBuffer(self):
+        """
+        """
+        return self._serial_queue
+    
+    def getlastDataFromBuffer(self, incubator, json_mode=True):
         """
         """
         if incubator == "all" or incubator < 0 :
@@ -301,6 +333,15 @@ class SerialController(threading.Thread):
             self._sync_time( fields["id"], fields["device_time"])
             yield fields
     
+    def sendRaw(self, line):
+        """
+        """
+        line = line.strip().encode('ascii')
+        logging.debug("Sending " + line)
+        self._serial.write(line + '\n')
+        return True
+        
+
     def sendCommand(self, inc_id, cmd, value):
         """
         """
@@ -365,15 +406,21 @@ class SerialController(threading.Thread):
         """
         while not self._is_stopped:
             serial_line = self._serial.readline()
+            self._serial_queue.append(serial_line)
+            
             fields = self._parse_serial_line(serial_line)
             if fields is None:
                 continue
             
             self._sync_time( fields["id"], fields["device_time"])
-            self._datatail.append(fields) # a queue is kept for frequent access of recent events
+
             
-            if self._filename: self._write_row_to_file(fields)
-            elif self._database: self._database.insert_row(fields)
+            if self._filename: 
+                self._write_row_to_file(fields)
+                self._datatail.append(fields)
+            
+            elif self._database: 
+                self._database.insert_row(fields)
             
 
             
@@ -392,22 +439,35 @@ class webServer:
         self._serial_fetcher.start()
 
     def _route(self):
-        self._app.route('/', method="GET", callback=self._index)
-        self._app.route('/static/<filepath:path>', callback=self._get_static)        
-        self._app.route('/json/<inc_id>', callback=self._incubator_json)
-        self._app.route('/incubator/<inc_id>/<days>', callback=self._get_incubator)
+        self._app.get('/', callback=self._index)
+        self._app.get('/serial', callback=self._serialmonitor)
         self._app.route('/graph/<inc_id>', callback=self._get_graph, method=["post", "get"])
-        self._app.route('/listen/<status>', callback=self._listen_to_serial)
-        self._app.route('/quit', callback=self._quit)
+
+        self._app.get('/json/<inc_id>', callback=self._incubator_json)
+        self._app.get('/incubator/<inc_id>/<days>', callback=self._get_incubator)
+
+        self._app.post('/send', callback=self._send_to_serial)
+
+        self._app.get('/static/<filepath:path>', callback=self._get_static)        
+        self._app.get('/listen/<status>', callback=self._listen_to_serial)
+        self._app.get('/quit', callback=self._quit)
 
     def start(self):
         self._app.run(host=self._host, port=self._port)
 
-    def _index(self):
-        return static_file('index.html', root="static")
-        
     def _get_static(self, filepath):
         return static_file(filepath, root="./static")
+
+    def _index(self):
+        return static_file('index.html', root="static")
+
+    def _serialmonitor(self):
+        return static_file('serialmonitor.html', root="static")
+        
+    def _send_to_serial(self):
+        myDict = request.json['myDict']
+        self._serial_fetcher.sendRaw ( myDict['line'] )
+        return {"result": "OK"}
         
     def _get_graph(self, inc_id):
         
@@ -428,7 +488,16 @@ class webServer:
         return  template('static/graph.tpl', rep)
 
     def _incubator_json(self, inc_id=0):
-        return self._serial_fetcher.getlastData(inc_id)
+        """
+        """
+        if inc_id == 'serial':
+
+            serial = list(self._serial_fetcher.getSerialBuffer())
+            serial.reverse()
+            data = {'result': ''.join(serial) }
+            return data
+        else:
+            return self._serial_fetcher.getlastData(inc_id)
         
     def _get_incubator(self, inc_id, days):
         

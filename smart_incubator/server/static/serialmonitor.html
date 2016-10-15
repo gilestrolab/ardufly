@@ -50,9 +50,29 @@
 
     <script>
         $(document).ready(function(){ 
-            loadDashboard();
-            refreshDashboard();
-            checkTimeValues();
+            
+            $("#serialinput").keypress(function (e) {
+                if(e.which == 13) {
+                    //submit form via ajax, this is not JS but server side scripting so not showing here
+                    
+                    $.ajax({
+                        type: "POST",
+                        url: "/send",
+                        data: JSON.stringify({myDict: {'line': $(this).val() }}),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: function(data){
+                        },
+                        failure: function(err) {
+                        }
+                    });
+
+                    $(this).val("");
+                    e.preventDefault();
+                }
+            });
+            
+            refreshSerialMonitor();
         }); 
     </script>
     
@@ -75,8 +95,10 @@
     </nav>
 </header>
     
-<div class="dashboard container" id="main">
-<div class="serialmonitor"></div>
+<div class="serialmonitor">
+    <textarea id="serialoutput"></textarea>
+    <textarea id="serialinput"></textarea>
+    </div>
 </div>
 
 </body>

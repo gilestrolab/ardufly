@@ -55,6 +55,18 @@
         color: #777;
         text-decoration: none;
     }
+    
+    .current-time {
+        color: #777;
+        float: left;
+        padding: 15px 15px;
+        font-size: 14px;
+        line-height: 20px;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        color: #777;
+        text-decoration: none;
+    }
+    
 
     .navbar-right {
         float: right!important;
@@ -336,3 +348,26 @@
         margin-right: 0px;
         float: right;
 }
+
+    .serialmonitor {
+        margin:0 auto;
+        overflow:hidden;
+        float:left;
+        align: center;
+        #display: block;
+        width: 1170px;
+        #padding-left: 200px;
+        #padding-right: 200px;    
+    
+    }
+    
+    .serialmonitor #serialoutput {
+        width: 80%;
+        height: 250px;
+    }
+    
+    .serialmonitor #serialinput {
+        width: 80%;
+        height: 50px;
+    }
+    
