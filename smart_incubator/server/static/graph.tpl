@@ -49,9 +49,10 @@
     <script type="text/javascript">
         
     $(document).ready(function(){ 
-            loadGraphs({{incubator_id}}, 1);
+            loadGraphs({{incubator_id}}, {{day}});
             loadIncubatorForm({{incubator_id}});
             show_alert_box();
+            show_time_buttons({{incubator_id}}, {{day}});
         });  
         
     </script>
@@ -85,13 +86,18 @@
     <div class="graph lost">
         <div class="agile">
             <div class="w3l-agile">
-                <h3>Incubator {{incubator_id}}</h3>
+                <h3 id="graph-title">Incubator {{incubator_id}}</h3></h2>
             </div>
             <div id="temperature"></div>
             <div id="humidity"></div>
             <div id="light"></div>
         </div>
     </div>
+
+    <div class="agile">
+        <div id="time-buttons"></div>
+    </div>
+
 
     <div class="agile">
         <div id="incubator-data"></div>

@@ -14,7 +14,7 @@ function loadDashboard(){
                 
                 $('#main').append('\
                     <div class="incubator" id="'+item.id+'">\
-                        <h2><a href="/graph/'+item.id+'">Incubator '+item.id+'</a></h2>\
+                        <h2><a href="/graph/'+item.id+'/1">Incubator '+item.id+'</a></h2>\
                         <div class="data">\
                             <p class="temperature">'+item.temperature+'</p><div class="light"></div></div>\
                         <div class="data">\
@@ -103,7 +103,7 @@ function refreshDashboard(){
 
             })
           }); 
-     window.setTimeout(refreshDashboard,10000);
+     window.setTimeout(refreshDashboard,1*60*1000); //we refresh once a minute
   }
 
 function refreshSerialMonitor(){
@@ -154,7 +154,18 @@ function show_alert_box() {
     
 }
 
+function show_time_buttons(incubator_id, day) {
+ 
+    $("#time-buttons").html('<a id=\"previous-day\" href="/graph/'+incubator_id+'/'+(day+1)+'">Previous Day</a> - <a id=\"next-day\" href="/graph/'+incubator_id+'/'+(day-1)+'">Next Day</a>');
+     
+}
+
 function loadGraphs(incubator_id, days){
+        
+        dateFrom = moment().subtract(days,'d').format('YYYY MMM DD dddd');
+        
+        $('#graph-title').text( $('#graph-title').text() + " - " + dateFrom )
+        
         $.ajax({
             url: "/incubator/"+incubator_id+"/"+days,
             dataType: 'JSON',

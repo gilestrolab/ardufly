@@ -13,6 +13,7 @@ from bottle import Bottle, template, static_file, url, request
 import json
  
 import MySQLdb
+import MySQLdb.cursors
 from MySQLdb.constants import FIELD_TYPE
  
  
@@ -55,11 +56,10 @@ class mySQLDatabase():
         _db_user_name = self._db_credentials["username"]
         _db_user_pass = self._db_credentials["password"]
         
-        my_conv = { FIELD_TYPE.TIMESTAMP: str }
-
-        self.connection = MySQLdb.connect('127.0.0.1', _db_user_name, _db_user_pass, _db_name, conv=my_conv)
-        self.cursor = self.connection.cursor(MySQLdb.cursors.DictCursor)
-        self.cursor.connection.autocommit(True)
+        my_conv = { FIELD_TYPE.TIMESTAMP: str, FIELD_TYPE.FLOAT: float, FIELD_TYPE.TINY: int, FIELD_TYPE.LONG: int, FIELD_TYPE.INT24: int }
+        
+        logging.debug("Creating a new connection with the `incubators` db")
+        self.connection = MySQLdb.connect('localhost', _db_user_name, _db_user_pass, _db_name, conv=my_conv, cursorclass=MySQLdb.cursors.DictCursor)
  
     @staticmethod
     def _timestamp_to_datetime(timestamp):
@@ -67,26 +67,31 @@ class mySQLDatabase():
  
     def insert(self, query):
         try:
-            self.cursor.execute(query)
-            self.connection.commit()
-            self.connection.close()
-        except:
+            with self.connection as cursor:
+                cursor.execute(query)
+                self.connection.commit()
+
+        # For some reason, I often get a "OperationalError: (2006, 'MySQL server has gone away')"
+        # Could not debug this - so, as workaround, I create a new connection if the existing one is broken
+        # This, however, could result in a dangerous loop if connection keeps dropping
+        except (AttributeError, MySQLdb.OperationalError):
             
             self.connect()
-            self.cursor.execute(query)
-            self.connection.commit()            
-            self.connection.close()
+            self.insert(query)
 
     def query(self, query):
-        self.connect()
-        cursor = self.connection.cursor( MySQLdb.cursors.DictCursor )
-        cursor.execute(query)
-        result = cursor.fetchall()
-        
-        #self.cursor.execute(query)
-        #result = self.cursor.fetchall()
+        try:
+            
+            with self.connection as cursor:
+                cursor.execute(query)
+                result = cursor.fetchall()
 
-        self.connection.close()
+        # For some reason, I often get a "OperationalError: (2006, 'MySQL server has gone away')"
+        # Could not debug this - so, as workaround, I create a new connection if the existing one is broken
+        except (AttributeError, MySQLdb.OperationalError):
+
+            self.connect()
+            result = self.query(query)
 
         return result
  
@@ -149,7 +154,7 @@ class mySQLDatabase():
         else:
             select_query = "SELECT * FROM incubators WHERE id = %s ORDER BY device_time DESC LIMIT 1;" % incubator
             data = self.query(select_query)[0]
-
+            
         return data
  
 class SerialController(threading.Thread):
@@ -306,7 +311,7 @@ class SerialController(threading.Thread):
         """
         """
         if self._database:
-            if json_mode or (incubator != 'all' and incubator >= 0 ):
+            if json_mode or (incubator != 'all' and incubator < 0 ):
                 return json.dumps(self._database.retrieve_last_line(incubator))
             else:
                 return self._database.retrieve_last_line(incubator)
@@ -394,7 +399,7 @@ class SerialController(threading.Thread):
     def update(self, inc_id, values):
         """
         """
-        current = self.getlastData( inc_id )
+        current = self.getlastData( inc_id , json_mode=False)
          
         resp = ""
          
@@ -404,7 +409,7 @@ class SerialController(threading.Thread):
         if values['set_hum'] != current['set_hum'] : 
             if self.sendCommand(inc_id, cmd='set_hum', value=values['set_hum']):
                 resp += "Humidity set to %s\n" % values['set_hum']
-        if values['set_light'] != current['set_light'] : 
+        if values['set_light'] != int(current['set_light']) : # why light is not being converted by mysqldb??!
             if self.sendCommand(inc_id, cmd='set_light', value=values['set_light']):
                 resp += "Light set to %s\n" % values['set_light']
         if values['dd_mode'] != current['dd_mode'] : 
@@ -459,7 +464,7 @@ class webServer:
     def _route(self):
         self._app.get('/', callback=self._index)
         self._app.get('/serial', callback=self._serialmonitor)
-        self._app.route('/graph/<inc_id>', callback=self._get_graph, method=["post", "get"])
+        self._app.route('/graph/<inc_id>/<day>', callback=self._get_graph, method=["post", "get"])
  
         self._app.get('/json/<inc_id>', callback=self._incubator_json)
         self._app.get('/incubator/<inc_id>/<days>', callback=self._get_incubator)
@@ -487,7 +492,7 @@ class webServer:
         self._serial_fetcher.sendRaw ( myDict['line'] )
         return {"result": "OK"}
          
-    def _get_graph(self, inc_id):
+    def _get_graph(self, inc_id, day):
          
         rep = {}
         if request.forms.get("submitted"):
@@ -502,7 +507,8 @@ class webServer:
         else:  
             rep['message'] = '' 
              
-        rep['incubator_id'] = inc_id 
+        rep['incubator_id'] = inc_id
+        rep['day'] = day
         return  template('static/graph.tpl', rep)
  
     def _incubator_json(self, inc_id=0):
@@ -558,7 +564,6 @@ if __name__ == '__main__':
         logging.debug("Logger in DEBUG mode")
  
     db_credentials = {'username': 'incubators', 'password' : 'incubators', 'db_name' : 'incubators' }
-    db = mySQLDatabase(db_credentials)
  
     if option_dict['output']:
         serial_fetcher = SerialController(option_dict["port"], filename=option_dict['output'])

@@ -130,6 +130,25 @@
         text-align: left;
         box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
     }
+
+    #time-buttons{
+        background: #ffffff;
+        border-color: #e7e7e7;
+        border: 2px;
+        padding: 20px;
+        float: left;
+        margin-top: 50px;
+        margin-left: 0px;
+        margin-bottom: 0px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    }
+     
+    #time-buttons a {
+        color: #777;
+        text-decoration: none;
+        }
         
     form input[type=submit] {
     background-color: #777;
