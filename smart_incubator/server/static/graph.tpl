@@ -90,7 +90,6 @@
             </div>
             <div id="temperature"></div>
             <div id="humidity"></div>
-            <div id="light"></div>
         </div>
     </div>
 
