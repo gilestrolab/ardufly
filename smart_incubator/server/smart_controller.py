@@ -132,7 +132,7 @@ class mySQLDatabase():
         if full:
             select_query = "SELECT id, device_time, temperature, humidity, light, set_temp, set_hum, set_light, lights_on, lights_off, dd_mode FROM incubators WHERE id = %s AND device_time BETWEEN '%s' AND '%s'" % ( int(incubator), start, end)
         else:
-            select_query = "SELECT id, device_time, temperature, humidity, light FROM incubators WHERE id = %s AND device_time BETWEEN '%s' AND '%s'" % ( int(incubator), start, end)
+            select_query = "SELECT id, device_time, temperature, humidity, light/10 as light FROM incubators WHERE id = %s AND device_time BETWEEN '%s' AND '%s'" % ( int(incubator), start, end)
          
         data = self.query(select_query)
         return data
