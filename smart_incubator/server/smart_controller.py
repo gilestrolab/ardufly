@@ -246,7 +246,12 @@ class SerialController(threading.Thread):
             return
  
         id, command, counter, device_time, temperature, humidity, light, set_temp, set_hum, set_light, lights_on, lights_off, dd_mode = fields
-        if int(id) == 0 : device_time = time.time()
+        
+        #if it's the room reading
+        if int(id) == 0 : 
+            device_time = time.time()
+            set_temp = 21
+            set_hum = 35
      
         out = collections.OrderedDict()
         out['id'] = int(id)
