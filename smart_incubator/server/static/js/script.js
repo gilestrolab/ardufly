@@ -182,13 +182,13 @@ function loadGraphs(incubator_id, days){
                 });
                 
                 Morris.Line({
-                    element: 'humidity',
+                    element: 'humidity', 'light'
                     data: response,
                     xkey: 'device_time',
-                    ykeys: ['humidity'],
-                    labels: ['Humidity'],
+                    ykeys: ['humidity', 'light'],
+                    labels: ['Humidity', 'Light'],
                     ymax: '100',
-                    ymin: '30'
+                    ymin: '0'
 
                 });
                 
