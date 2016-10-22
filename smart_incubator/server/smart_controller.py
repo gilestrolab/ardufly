@@ -12,9 +12,13 @@ import threading
 from bottle import Bottle, template, static_file, url, request
 import json
  
-import MySQLdb
-import MySQLdb.cursors
-from MySQLdb.constants import FIELD_TYPE
+#import MySQLdb
+#import MySQLdb.cursors
+#from MySQLdb.constants import FIELD_TYPE
+
+import pymysql
+import pymysql.cursors
+from pymysql.constants import FIELD_TYPE
  
  
 class mySQLDatabase():
@@ -59,7 +63,8 @@ class mySQLDatabase():
         my_conv = { FIELD_TYPE.TIMESTAMP: str, FIELD_TYPE.FLOAT: float, FIELD_TYPE.TINY: int, FIELD_TYPE.LONG: int, FIELD_TYPE.INT24: int }
         
         logging.debug("Creating a new connection with the `incubators` db")
-        self.connection = MySQLdb.connect('localhost', _db_user_name, _db_user_pass, _db_name, conv=my_conv, cursorclass=MySQLdb.cursors.DictCursor)
+#        self.connection = MySQLdb.connect('localhost', _db_user_name, _db_user_pass, _db_name, conv=my_conv, cursorclass=MySQLdb.cursors.DictCursor)
+        self.connection = pymysql.connect('localhost', _db_user_name, _db_user_pass, _db_name, conv=my_conv, cursorclass=pymysql.cursors.DictCursor)
  
     @staticmethod
     def _timestamp_to_datetime(timestamp):
