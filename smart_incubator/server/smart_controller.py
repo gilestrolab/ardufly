@@ -30,7 +30,8 @@ class mySQLDatabase():
      
     CREATE TABLE incubators.incubators
     (
-    id TINYINT,
+    id int NOT NULL AUTO_INCREMENT,
+    inc_id TINYINT,
     row_type CHAR,
     counter BIGINT,
     device_time TIMESTAMP,
@@ -42,10 +43,14 @@ class mySQLDatabase():
     set_light SMALLINT,
     lights_on MEDIUMINT,
     lights_off MEDIUMINT,
-    dd_mode TINYINT
+    dd_mode TINYINT,
+    PRIMARY_KEY(id)
     );
      
     COMMIT;
+    
+    ALTER TABLE incubators CHANGE id inc_id VARCHAR(255) NOT NULL;
+    ALTER TABLE incubators ADD id INT NOT NULL AUTO_INCREMENT PRIMARY KEY;
  
     """
  
@@ -79,7 +84,8 @@ class mySQLDatabase():
         # For some reason, I often get a "OperationalError: (2006, 'MySQL server has gone away')"
         # Could not debug this - so, as workaround, I create a new connection if the existing one is broken
         # This, however, could result in a dangerous loop if connection keeps dropping
-        except (AttributeError, MySQLdb.OperationalError):
+        #except (AttributeError, MySQLdb.OperationalError):
+        except (AttributeError, pymysql.OperationalError):
             
             self.connect()
             self.insert(query)
@@ -93,7 +99,8 @@ class mySQLDatabase():
 
         # For some reason, I often get a "OperationalError: (2006, 'MySQL server has gone away')"
         # Could not debug this - so, as workaround, I create a new connection if the existing one is broken
-        except (AttributeError, MySQLdb.OperationalError):
+        #except (AttributeError, MySQLdb.OperationalError):
+        except (AttributeError, pymysql.OperationalError):
 
             self.connect()
             result = self.query(query)
@@ -135,9 +142,9 @@ class mySQLDatabase():
         #end = time.mktime(datetime.datetime(end.year, end.month, end.day, *zt0).timetuple())
  
         if full:
-            select_query = "SELECT id, device_time, temperature, humidity, light, set_temp, set_hum, set_light, lights_on, lights_off, dd_mode FROM incubators WHERE id = %s AND device_time BETWEEN '%s' AND '%s'" % ( int(incubator), start, end)
+            select_query = "SELECT inc_id, device_time, temperature, humidity, light, set_temp, set_hum, set_light, lights_on, lights_off, dd_mode FROM incubators WHERE inc_id = %s AND device_time BETWEEN '%s' AND '%s'" % ( int(incubator), start, end)
         else:
-            select_query = "SELECT id, device_time, temperature, humidity, light/10 as light FROM incubators WHERE id = %s AND device_time BETWEEN '%s' AND '%s'" % ( int(incubator), start, end)
+            select_query = "SELECT inc_id, device_time, temperature, humidity, light/10 as light FROM incubators WHERE inc_id = %s AND device_time BETWEEN '%s' AND '%s'" % ( int(incubator), start, end)
          
         data = self.query(select_query)
         return data
@@ -145,19 +152,19 @@ class mySQLDatabase():
     def getAllIDs(self):
         """
         """
-        select_query = "SELECT DISTINCT(id) as id FROM incubators ORDER BY id ASC;"
+        select_query = "SELECT DISTINCT(inc_id) as inc_id FROM incubators ORDER BY inc_id ASC;"
         data = self.query(select_query)
-        return [i['id'] for i in data]
+        return [i['inc_id'] for i in data]
  
     def retrieve_last_line(self, incubator):
         """
         """
         if incubator == 'all' or incubator < 0:
-            select_query = "SELECT * FROM incubators.incubators WHERE device_time IN (SELECT MAX(device_time) FROM incubators.incubators GROUP BY id) ORDER BY id;"
+            select_query = "SELECT * FROM incubators.incubators WHERE device_time IN (SELECT MAX(device_time) FROM incubators.incubators GROUP BY inc_id) ORDER BY inc_id;"
             data = self.query(select_query)
 
         else:
-            select_query = "SELECT * FROM incubators WHERE id = %s ORDER BY device_time DESC LIMIT 1;" % incubator
+            select_query = "SELECT * FROM incubators WHERE inc_id = %s ORDER BY device_time DESC LIMIT 1;" % incubator
             data = self.query(select_query)[0]
             
         return data
@@ -250,16 +257,16 @@ class SerialController(threading.Thread):
             logging.debug('fields = ' + str(fields))
             return
  
-        id, command, counter, device_time, temperature, humidity, light, set_temp, set_hum, set_light, lights_on, lights_off, dd_mode = fields
+        inc_id, command, counter, device_time, temperature, humidity, light, set_temp, set_hum, set_light, lights_on, lights_off, dd_mode = fields
         
         #if it's the room reading
-        if int(id) == 0 : 
+        if int(inc_id) == 0 : 
             device_time = time.time()
             set_temp = 21
             set_hum = 35
      
         out = collections.OrderedDict()
-        out['id'] = int(id)
+        out['inc_id'] = int(inc_id)
         out['row_type'] = command
         out['counter'] = int(counter)
         out['device_time']=round(float(device_time),2)
@@ -339,7 +346,7 @@ class SerialController(threading.Thread):
             all_incubators_id = set()
              
             for row in reversed(self._datatail):
-                if row['id'] not in all_incubators_id:
+                if row['inc_id'] not in all_incubators_id:
                     all_incubators.append(row)
                     all_incubators_id.add(row['id'])
             if json_mode:
@@ -350,7 +357,7 @@ class SerialController(threading.Thread):
  
         else:
             for row in reversed(self._datatail):
-                if row['id'] == int(incubator):
+                if row['inc_id'] == int(incubator):
                     return row
         return None
  
@@ -363,7 +370,7 @@ class SerialController(threading.Thread):
             fields = self._parse_serial_line(serial_line)
             if fields is None:
                 continue
-            self._sync_time( fields["id"], fields["device_time"])
+            self._sync_time( fields["inc_id"], fields["device_time"])
             yield fields
      
     def sendRaw(self, line):
@@ -445,7 +452,7 @@ class SerialController(threading.Thread):
             if fields is None:
                 continue
              
-            self._sync_time( fields["id"], fields["device_time"])
+            self._sync_time( fields["inc_id"], fields["device_time"])
  
              
             if self._filename: 
@@ -506,7 +513,7 @@ class webServer:
          
         rep = {}
         if request.forms.get("submitted"):
-            values = {'id' : inc_id}
+            values = {'inc_id' : inc_id}
             values['set_temp'] = float(request.forms.get("set_temp"))
             values['set_hum'] = int(request.forms.get("set_hum"))
             values['set_light'] = int(request.forms.get("set_light"))

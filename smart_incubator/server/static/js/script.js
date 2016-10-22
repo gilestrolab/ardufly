@@ -13,8 +13,8 @@ function loadDashboard(){
                var time = moment(timestamp*1000).format("DD-MM-YYYY HH:mm");                
                 
                 $('#main').append('\
-                    <div class="incubator" id="'+item.id+'">\
-                        <h2><a href="/graph/'+item.id+'/1">Incubator '+item.id+'</a></h2>\
+                    <div class="incubator" id="'+item.inc_id+'">\
+                        <h2><a href="/graph/'+item.inc_id+'/1">Incubator '+item.inc_id+'</a></h2>\
                         <div class="data">\
                             <p class="temperature">'+item.temperature+'</p><div class="light"></div></div>\
                         <div class="data">\
@@ -40,7 +40,7 @@ function loadIncubatorForm(incubator_id){
 
                 $('#incubator-data').append('\
                             <form class="incubator-form" method="post">\
-                            <p>Incubator '+data.id+' - Last reading: '+time+'</p>\
+                            <p>Incubator '+data.inc_id+' - Last reading: '+time+'</p>\
                             <p><label>Current temperature is: '+data.temperature+' / </label><input type="text" name="set_temp" value="'+data.set_temp+'"  size="2"></p>\
                             <p><label>Current humidity is: '+data.humidity+' / </label><input type="text" name="set_hum" value="'+data.set_hum+'"  size="2"></p>\
                             <p><label>Current Light is:  '+data.light/10+'. Light power is set at:  </label><input type="text" name="set_light" value="'+data.set_light+'"  size="2"></p>\
@@ -81,25 +81,25 @@ function refreshDashboard(){
                var temperature = item.temperature;
                 
                 if (Math.abs(item.temperature - item.set_temp ) > 0.5) 
-                    { $('#' + item.id).find('.temperature').css('color','#934c4c'); }
+                    { $('#' + item.inc_id).find('.temperature').css('color','#934c4c'); }
                 else
-                    { $('#' + item.id).find('.temperature').css('color','#777'); }
+                    { $('#' + item.inc_id).find('.temperature').css('color','#777'); }
                 if (Math.abs(item.humidity - item.set_hum ) > 2) 
-                    { $('#' + item.id).find('.humidity').css('color','#934c4c'); }
+                    { $('#' + item.inc_id).find('.humidity').css('color','#934c4c'); }
                 else
-                    { $('#' + item.id).find('.humidity').css('color','#777'); }
+                    { $('#' + item.inc_id).find('.humidity').css('color','#777'); }
                 
-            $('#' + item.id).find('.temperature').html(item.temperature);
-            $('#' + item.id).find('.temperature').attr('title', item.temperature + " / " + item.set_temp);
+            $('#' + item.inc_id).find('.temperature').html(item.temperature);
+            $('#' + item.inc_id).find('.temperature').attr('title', item.temperature + " / " + item.set_temp);
             
-            $('#' + item.id).find('.light').css('opacity', item.light/100.0);
-            $('#' + item.id).find('.light').attr('title', item.light + " / " + item.set_light*10);
+            $('#' + item.inc_id).find('.light').css('opacity', item.light/100.0);
+            $('#' + item.inc_id).find('.light').attr('title', item.light + " / " + item.set_light*10);
             
-            $('#' + item.id).find('.humidity').html(item.humidity);
-            $('#' + item.id).find('.humidity').attr('title', item.humidity + " / " + item.set_hum);
+            $('#' + item.inc_id).find('.humidity').html(item.humidity);
+            $('#' + item.inc_id).find('.humidity').attr('title', item.humidity + " / " + item.set_hum);
             
-            $('#' + item.id).find('.time').find("p").html(item.device_time);
-            $('#' + item.id).find('.time').attr('title', timestamp);
+            $('#' + item.inc_id).find('.time').find("p").html(item.device_time);
+            $('#' + item.inc_id).find('.time').attr('title', timestamp);
 
             })
           }); 
