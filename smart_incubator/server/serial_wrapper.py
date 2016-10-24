@@ -106,7 +106,7 @@ class SerialWrapper(object):
         return fields
 
 
-    def _parse_serial_line(self,line):
+    def _parse_serial_line(self, line):
         """
         """
         logging.debug("Getting line = " + line)
@@ -129,8 +129,9 @@ class SerialWrapper(object):
         out['inc_id'] = int(inc_id)
         out['row_type'] = command
         out['counter'] = int(counter)
-        out['device_time']=round(float(device_time),2)
+        out['device_time'] = round(float(device_time),2)
         out['server_time'] = round(time.time(),2)
+        #out['server_time'] = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         out['temperature'] = round(float(temperature), 1)
         out['humidity'] = round(float(humidity), 1)
         out['light'] = int(light)

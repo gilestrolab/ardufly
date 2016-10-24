@@ -22,7 +22,8 @@ from MySQLdb.constants import FIELD_TYPE
 #import pymysql.cursors
 #from pymysql.constants import FIELD_TYPE
  
- 
+
+
 class mySQLDatabase():
     """
     MariaDB [(none)]> CREATE DATABASE incubators;
@@ -30,25 +31,24 @@ class mySQLDatabase():
     MariaDB [(none)]> GRANT ALL PRIVILEGES ON incubators.* to 'incubators'@'localhost';
     MariaDB [(none)]> FLUSH PRIVILEGES;
      
-    CREATE TABLE incubators.incubators
-    (
-    id int NOT NULL AUTO_INCREMENT,
-    inc_id TINYINT,
-    row_type CHAR,
-    counter BIGINT,
-    device_time TIMESTAMP,
-    temperature FLOAT,
-    humidity FLOAT,
-    light SMALLINT,
-    set_temp FLOAT,
-    set_hum FLOAT,
-    set_light SMALLINT,
-    lights_on MEDIUMINT,
-    lights_off MEDIUMINT,
-    dd_mode TINYINT,
-    PRIMARY_KEY(id)
-    );
-     
+CREATE TABLE incubators (id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+inc_id TINYINT,
+row_type CHAR,
+counter BIGINT,
+device_time BIGINT,
+server_time BIGINT,
+temperature FLOAT,
+humidity FLOAT,
+light SMALLINT,
+set_temp FLOAT,
+set_hum FLOAT,
+set_light SMALLINT,
+lights_on MEDIUMINT,
+lights_off MEDIUMINT,
+dd_mode TINYINT);
+
+
+
     COMMIT;
     
     ALTER TABLE incubators CHANGE id inc_id VARCHAR(255) NOT NULL;
