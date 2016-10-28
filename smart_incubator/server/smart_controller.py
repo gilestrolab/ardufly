@@ -480,8 +480,7 @@ class webServer:
         self._route()
          
         self._serial_fetcher = serial_fetcher
-        self._serial_fetcher.start()
- 
+
     def _route(self):
         self._app.get('/', callback=self._index)
         self._app.get('/serial', callback=self._serialmonitor)
@@ -590,9 +589,16 @@ if __name__ == '__main__':
         serial_fetcher = SerialController(option_dict["port"], filename=option_dict['output'])
     else: 
         serial_fetcher = SerialController(option_dict["port"], db_credentials=db_credentials)
- 
+
+
     if option_dict['web']:
-        server = webServer(host='0.0.0.0', port=8090, serial_fetcher=serial_fetcher)
-        server.start()
+        try:
+            serial_fetcher.start()
+            server = webServer(host='0.0.0.0', port=8090, serial_fetcher=serial_fetcher)
+            server.start()
+        finally:
+            serial_fetcher.stop()
+            serial_fetcher.join()
+
     else:
-        serial_fetcher.start()
+        serial_fetcher.run()
