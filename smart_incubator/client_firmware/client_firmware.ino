@@ -4,9 +4,16 @@
 //Global variables use 1,655 bytes (80%) of dynamic memory, leaving 393 bytes for local variables. Maximum is 2,048 bytes.
 
 //define hardware connection and hard parameters
-#define VERSION 2.2
+#define VERSION 2.3
 #define masterID 0
-#define myID 4
+#define myID 15
+
+//still not implemented
+#define BUTTON_PIN 2 /// THIS IS ACTUALLY USED BY TEC DIR
+
+//bicolor LED (center pin goes to cathode)
+#define GREEN_PIN 3
+#define RED_PIN 4
 
 // pin for sensors
 #define optoresistor_PIN 15 //A1
@@ -18,16 +25,16 @@
 //#define HUM_PIN 9
 
 //pin for PELTIER TEC
-#define PELTIER_PWM 6 // what is the frequency of pin 6? pin 9 has a pwm frequency of 490hz
-#define PELTIER_DIR 4
+#define PELTIER_PWM 5 // what is the frequency of pin 6? pin 9 has a pwm frequency of 490hz
+#define PELTIER_DIR 2
 
 //define hardware and shields used
 #define USE_SENSIRION
 #define USE_RADIO
-//#define USE_TEC
+#define USE_TEC
 //#define USE_TEC_PWM
 //#define USE_SD 1  // we do not use SD on regular UNOs because a) we don't need it and b) it takes too much memory
-#define LOCAL_SERIAL
+//#define LOCAL_SERIAL
 
 #define CMD 'C'
 #define REPORT 'R'
@@ -107,6 +114,9 @@
 // External descriptor of data structure
 #include "MyTypes.h"
 
+//Experimenting with watchdog
+#include <avr/wdt.h>
+
 //Initialising objects and variables
 
 unsigned long counter = 0;
@@ -122,9 +132,9 @@ configuration cfg = {
     1, // cfg.dd_mode  0 = DD,  1 = LD, 2 = LL, 3 = DL
     
     true, // cfg.send_report
-    1, // cfg.report_delay in minutes
+    5, // cfg.report_delay in minutes
 
-    25.0, // cfg.set_temp
+    22.0, // cfg.set_temp
     65.0 // cfg.set_hum 
 };
 
@@ -144,12 +154,13 @@ int MIN_SENSOR_PAUSE = 5000; // to avoid self heating of the probe we don't read
 RF24 radio(RADIO_CE, RADIO_CS);
 RF24Network network(radio);
 RF24Mesh mesh(radio, network);
-#define MESH_RENEWAL_TIMEOUT 10000 // changing timeout from 60.000 ms to 15.000ms
+#define MESH_RENEWAL_TIMEOUT 5000 // changing timeout from 60.000 ms to 5.000ms
 #endif
 
 
 void setup()
-{
+{  
+  
   Serial.begin(115200);
 
 #if defined(LOCAL_SERIAL)  
@@ -158,6 +169,7 @@ void setup()
   
   pinMode(LED_PIN, OUTPUT);
   pinMode(optoresistor_PIN, INPUT);
+  
 
 #if defined(USE_DHT)  
   dht.setup(HT_PIN);
@@ -194,10 +206,6 @@ void setup()
   
   //saveConfiguration(); // Enable this on first update only, then reupload
   setSyncProvider(RTC.get);  // get the time from the RTC
-
-  //time_t artificial_time = 1464715350;
-  //RTC.set(artificial_time);
-  //setTime(artificial_time);
   
   // Retrieves Lights ON/OFF timer values and last light status
   loadConfiguration();
@@ -208,6 +216,9 @@ void setup()
   pinMode(PELTIER_PWM, OUTPUT);
   pinMode(PELTIER_DIR, OUTPUT);
 #endif
+
+  wdt_enable(WDTO_8S);
+
 }
 
 #if defined(LOCAL_SERIAL)
@@ -293,6 +304,8 @@ void serial_setTemperature(){
   setTemperature(set_TEMP);
 }
 
+
+
 void serial_setHumidity(){
   // set the current Humidity on node
   char *arg;
@@ -354,8 +367,21 @@ void printError(const char *command) {
 
 #endif //LOCAL_SERIAL
 
+bool lightIsON()
+{
+    return CURRENT_LIGHT > 0;
+}
+
+bool lightIsOFF()
+{
+    return not lightIsON();
+}
+
+
 void loop()
 {
+
+    wdt_reset();
 
 #if defined(USE_TEC)
     // we do this continously but the freshness of the getTemperature result is 
@@ -376,18 +402,18 @@ void loop()
   switch(cfg.dd_mode) {
       
       case 0: //DD
-        if ( CURRENT_LIGHT > 0 ) { LightsOFF(); }
+        if ( lightIsON() ) { LightsOFF(); }
         break;
       case 1: //LD
-        if (CURRENT_LIGHT == 0 && minute_of_the_day >= cfg.lights_on && minute_of_the_day < cfg.lights_off) { LightsON(); }
-        if (CURRENT_LIGHT > 0 && minute_of_the_day >= cfg.lights_off) { LightsOFF(); }
+        if (lightIsOFF() && minute_of_the_day >= cfg.lights_on && minute_of_the_day < cfg.lights_off) { LightsON(); }
+        if (lightIsON() && minute_of_the_day >= cfg.lights_off) { LightsOFF(); }
         break;
       case 2: //LL
-        if ( CURRENT_LIGHT == 0 ) { LightsON(); }
+        if ( lightIsOFF() ) { LightsON(); }
         break;
       case 3: //DL
-        if (CURRENT_LIGHT > 0 && minute_of_the_day >= cfg.lights_off && minute_of_the_day < cfg.lights_on) { LightsOFF(); }
-        if (CURRENT_LIGHT == 0 && minute_of_the_day >= cfg.lights_on) { LightsON(); }
+        if (lightIsON() && minute_of_the_day >= cfg.lights_off && minute_of_the_day < cfg.lights_on) { LightsOFF(); }
+        if (lightIsOFF() && minute_of_the_day >= cfg.lights_on) { LightsON(); }
         break;
       default:
         // do nothing
@@ -437,7 +463,7 @@ void loop()
                     fadeToLevel (rcvdPackage.set_light);
                     break;
                 case 'F':
-                    setInterval (rcvdPackage.set_light);
+                    setTransmissionInterval (rcvdPackage.set_light);
                     break;
                 case 'M':
                     setLightMode (rcvdPackage.set_light);
@@ -467,7 +493,9 @@ void loop()
     } //endif network
 #endif // use radio
 
+#if defined(LOCAL_SERIAL)
 sCmd.readSerial(); 
+#endif
  
 } // end of loop
 
@@ -524,7 +552,9 @@ void loadConfiguration()
 void saveConfiguration()
 {
 //saves values to EEPROM
-  Serial.println("Saving configuration to memory");
+
+  Serial.println("==Saving:==");
+  debug();
   EEPROM.write(0, 1);
   EEPROM.put(1, cfg);
 }
@@ -546,7 +576,7 @@ void setRTCTime(time_t time_rcvd)
   sendDataPackage(EVENT);
 }
 
-void setInterval(byte interval)
+void setTransmissionInterval(byte interval)
 {
   (interval < 1) ? cfg.report_delay = 1 : cfg.report_delay = interval;
   cfg.send_report = ( cfg.report_delay > 0 );
@@ -672,15 +702,16 @@ void sendDataPackage(char header_type){
     dataPackage.set_light = CURRENT_LIGHT;
     
     //light timer data
-    dataPackage.lights_on = cfg.lights_on * 60.0; // in seconds
-    dataPackage.lights_off = cfg.lights_off * 60.0; // in seconds
+    dataPackage.lights_on = (cfg.lights_on * 60.0); // in seconds
+    dataPackage.lights_off = (cfg.lights_off * 60.0); // in seconds
     dataPackage.dd_mode = cfg.dd_mode;
 
+    Serial.println("==Sending:==");
     debug();
 
 #if defined(USE_RADIO)
     Serial.print(F("RF: "));
-     if (!mesh.write( &dataPackage, 'R', sizeof(dataPackage), masterID )){
+     if (!mesh.write( &dataPackage, header_type, sizeof(dataPackage), masterID )){
        Serial.println(F("FAIL"));
      } else { Serial.println("OK"); }
 #endif

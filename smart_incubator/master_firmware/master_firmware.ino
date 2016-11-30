@@ -242,11 +242,11 @@ void setLightMode(){
   }
 
   arg = sCmd.next();
-  if ((arg != NULL) and (strcmp (arg,"DD") == 0)){ mode = 0; };
-  if ((arg != NULL) and (strcmp (arg,"LD") == 0)){ mode = 1; };
-  if ((arg != NULL) and (strcmp (arg,"LL") == 0)){ mode = 2; };
-  if ((arg != NULL) and (strcmp (arg,"DL") == 0)){ mode = 3; };
-  if ((arg != NULL) and (strcmp (arg,"00") == 0)){ mode = 4; };
+  if ((arg != NULL) and (strcmp (arg,"DD") == 0) or (strcmp (arg,"0") == 0)){ mode = 0; };
+  if ((arg != NULL) and (strcmp (arg,"LD") == 0) or (strcmp (arg,"1") == 0)){ mode = 1; };
+  if ((arg != NULL) and (strcmp (arg,"LL") == 0) or (strcmp (arg,"2") == 0)){ mode = 2; };
+  if ((arg != NULL) and (strcmp (arg,"DL") == 0) or (strcmp (arg,"3") == 0)){ mode = 3; };
+  if ((arg != NULL) and (strcmp (arg,"00") == 0) or (strcmp (arg,"4") == 0)){ mode = 4; };
 
   dataPackage.orig_nodeID = masterID;
   dataPackage.dest_nodeID = destID;
@@ -265,7 +265,7 @@ void setLightsONTimer(){
   // Changes the HH:MM for lights on - Called from serial port
   char *arg;
   int destID = 0;
-  int lights_on = 0;
+  time_t lights_on = 0;
 
   arg = sCmd.next();
   if (arg != NULL) {
@@ -275,6 +275,7 @@ void setLightsONTimer(){
   arg = sCmd.next();
   if (arg != NULL) {
     lights_on = atol(arg);
+    //this is indicated as number of seconds from unix time 0 e.g. 32400 for 9:00am
   }
 
 
@@ -294,7 +295,7 @@ void setLightsOFFTimer(){
   // Changes the HH:MM for lights off - called from serial port
   char *arg;
   int destID = 0;
-  unsigned long lights_off = 0;
+  time_t lights_off = 0;
 
   arg = sCmd.next();
   if (arg != NULL) {
@@ -304,6 +305,7 @@ void setLightsOFFTimer(){
   arg = sCmd.next();
   if (arg != NULL) {
     lights_off = atol(arg);
+    //this is indicated as number of seconds from unix time 0 e.g. 75600 for 9:00pm
   }
 
   dataPackage.orig_nodeID = masterID;
