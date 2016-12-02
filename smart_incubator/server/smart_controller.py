@@ -9,7 +9,7 @@ import glob
 import os
  
 import threading
-from bottle import Bottle, template, static_file, url, request
+from bottle import Bottle, ServerAdapter, template, static_file, url, request
 import json
  
 import MySQLdb
@@ -472,31 +472,30 @@ class SerialController(threading.Thread):
         self._is_stopped = True
  
  
-class webServer:
-    def __init__(self, host, port, serial_fetcher):
-        self._host = host
-        self._port = port
-        self._app = Bottle()
-        self._route()
-         
-        self._serial_fetcher = serial_fetcher
+class webServer(Bottle):
+ 
+    def __init__(self, serial_port):
+        super(webServer, self).__init__()
 
+        db_credentials = {'username': 'incubators', 'password' : 'incubators', 'db_name' : 'incubators' }
+        self._serial_fetcher = SerialController(serial_port, db_credentials=db_credentials)
+        self._serial_fetcher.start() # starting the serial fetcher thread
+        
+        self._route()
+ 
     def _route(self):
-        self._app.get('/', callback=self._index)
-        self._app.get('/serial', callback=self._serialmonitor)
-        self._app.route('/graph/<inc_id>/<day>', callback=self._get_graph, method=["post", "get"])
+        self.get('/', callback=self._index)
+        self.get('/serial', callback=self._serialmonitor)
+        self.route('/graph/<inc_id>/<day>', callback=self._get_graph, method=["post", "get"])
  
-        self._app.get('/json/<inc_id>', callback=self._incubator_json)
-        self._app.get('/incubator/<inc_id>/<days>', callback=self._get_incubator)
+        self.get('/json/<inc_id>', callback=self._incubator_json)
+        self.get('/incubator/<inc_id>/<days>', callback=self._get_incubator)
  
-        self._app.post('/send', callback=self._send_to_serial)
+        self.post('/send', callback=self._send_to_serial)
  
-        self._app.get('/static/<filepath:path>', callback=self._get_static)        
-        self._app.get('/listen/<status>', callback=self._listen_to_serial)
-        self._app.get('/quit', callback=self._quit)
- 
-    def start(self):
-        self._app.run(host=self._host, port=self._port)
+        self.get('/static/<filepath:path>', callback=self._get_static)        
+        self.get('/listen/<status>', callback=self._listen_to_serial)
+        self.get('/quit', callback=self._quit)
  
     def _get_static(self, filepath):
         return static_file(filepath, root="./static")
@@ -583,22 +582,18 @@ if __name__ == '__main__':
         logging.getLogger().setLevel(logging.DEBUG)
         logging.debug("Logger in DEBUG mode")
  
-    db_credentials = {'username': 'incubators', 'password' : 'incubators', 'db_name' : 'incubators' }
+    #db_credentials = {'username': 'incubators', 'password' : 'incubators', 'db_name' : 'incubators' }
  
-    if option_dict['output']:
-        serial_fetcher = SerialController(option_dict["port"], filename=option_dict['output'])
-    else: 
-        serial_fetcher = SerialController(option_dict["port"], db_credentials=db_credentials)
+    #if option_dict['output']:
+    #    serial_fetcher = SerialController(option_dict["port"], filename=option_dict['output'])
+    #else: 
+    #    serial_fetcher = SerialController(option_dict["port"], db_credentials=db_credentials)
 
 
     if option_dict['web']:
-        try:
-            serial_fetcher.start()
-            server = webServer(host='0.0.0.0', port=8090, serial_fetcher=serial_fetcher)
-            server.start()
-        finally:
-            serial_fetcher.stop()
-            serial_fetcher.join()
-
-    else:
-        serial_fetcher.run()
+        app = webServer(serial_port=option_dict["port"])
+        app.run(host='0.0.0.0', port=8090)
+        
+        #serial_fetcher.start()
+        #server = webServer(host='0.0.0.0', port=8090, serial_fetcher=serial_fetcher)
+        #server.start()
