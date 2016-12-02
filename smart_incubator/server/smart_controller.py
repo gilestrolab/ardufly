@@ -491,7 +491,7 @@ class webServer(Bottle):
          
     def _get_incubator(self, inc_id, days):
          
-        data = self._database.retrieve_day(incubator, days)
+        data = self._database.retrieve_day(inc_id, days)
         return json.dumps(data)
                  
     def getlastData(self, incubator, json_mode=True):
