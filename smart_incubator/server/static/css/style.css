@@ -249,7 +249,7 @@
       position: relative;
     }
     
-    .data p {
+    .data1 p {
       font-size: 400%;
       line-height: 1em;
       color: #ffffff;
@@ -267,13 +267,25 @@
   }
     
     .temperature {
-#       background: #777;
-        float: left;
-        background-color: rgba (25, 25, 75, 0.5); 
-        padding: 10px;
-        margin: 5px;
-        height: 60px;
+      font-size: 400%;
+      line-height: 1em;
+      color: #ffffff;
+      float: left;
+      background-color: rgba (25, 25, 75, 0.5); 
+      padding: 10px;
+      margin: 5px;
+      height: 60px;
     }
+    
+    .light_mode {
+      float: right;
+      font-size: 200%;
+      line-height: 1em;
+      color: #777;
+      height: 56px;
+      width: 56px;
+      margin-bottom: 0px;
+  }
     
     .temperature:after {
       font-size: 55%;
@@ -284,10 +296,13 @@
     }
 
     .humidity {
-        float: left;
-        padding: 10px;
-        margin: 5px;
-        height: 60px;
+      font-size: 400%;
+      line-height: 1em;
+      color: #ffffff;
+      float: left;
+      padding: 10px;
+      margin: 5px;
+      height: 60px;
     }
 
   

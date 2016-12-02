@@ -1,30 +1,3 @@
-function loadDashboard(){
-     $.getJSON("/json/all", 
-          function(data) {
-            $.each(data, function(i, item) {
-                
-                is_timestamp = new Date(item.device_time*1000).getTime() > 0;
-                if (is_timestamp) { 
-                    var timestamp = item.device_time;
-                } else {
-                    var k = moment(item.device_time);
-                    var timestamp = (k + k.utcOffset()*60*1000)/1000;
-                }
-               var time = moment(timestamp*1000).format("DD-MM-YYYY HH:mm");                
-                
-                $('#main').append('\
-                    <div class="incubator" id="'+item.inc_id+'">\
-                        <h2><a href="/graph/'+item.inc_id+'/1">Incubator '+item.inc_id+'</a></h2>\
-                        <div class="data">\
-                            <p class="temperature">'+item.temperature+'</p><div class="light"></div></div>\
-                        <div class="data">\
-                            <p class="humidity">'+item.humidity+'</p></div>\
-                        <div class="time"><p>'+time+'</p></div>\
-                        </div>');
-            })
-          }); 
-  }
-
 function loadIncubatorForm(incubator_id){
      $.getJSON("/json/" + incubator_id, 
           function(data) {
@@ -59,6 +32,33 @@ function loadIncubatorForm(incubator_id){
                             </form>\
                         </div>');
                 $('.incubator-form option[value='+data.dd_mode+']').attr('selected','selected');
+          }); 
+  }
+
+function loadDashboard(){
+     $.getJSON("/json/all", 
+          function(data) {
+            $.each(data, function(i, item) {
+                
+                is_timestamp = new Date(item.device_time*1000).getTime() > 0;
+                if (is_timestamp) { 
+                    var timestamp = item.device_time;
+                } else {
+                    var k = moment(item.device_time);
+                    var timestamp = (k + k.utcOffset()*60*1000)/1000;
+                }
+               var time = moment(timestamp*1000).format("DD-MM-YYYY HH:mm");                
+                
+                $('#main').append('\
+                    <div class="incubator" id="'+item.inc_id+'">\
+                        <h2><a href="/graph/'+item.inc_id+'/1">Incubator '+item.inc_id+'</a></h2>\
+                        <div class="data">\
+                            <p class="temperature">'+item.temperature+'</p><span class="light"></span></div>\
+                        <div class="data">\
+                            <p class="humidity">'+item.humidity+'</p><p class="light_mode">_</p></div>\
+                        <div class="time"><p>'+time+'</p></div>\
+                        </div>');
+            })
           }); 
   }
 
@@ -97,6 +97,10 @@ function refreshDashboard(){
             
             $('#' + item.inc_id).find('.humidity').html(item.humidity);
             $('#' + item.inc_id).find('.humidity').attr('title', item.humidity + " / " + item.set_hum);
+
+            lm = ["DD","LD","LL","DL","MM"]
+            $('#' + item.inc_id).find('.light_mode').html(lm[item.dd_mode]);
+
             
             $('#' + item.inc_id).find('.time').find("p").html(item.device_time);
             $('#' + item.inc_id).find('.time').attr('title', timestamp);
