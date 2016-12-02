@@ -104,6 +104,9 @@ function refreshDashboard(){
             
             $('#' + item.inc_id).find('.time').find("p").html(item.device_time);
             $('#' + item.inc_id).find('.time').attr('title', timestamp);
+            
+            var elapsed = moment().utc() - moment( timestamp * 1000);
+            $('.last-update').text("Last update: " + Math.floor(elapsed / 60000 / 60) + " mins ago")
 
             })
           }); 

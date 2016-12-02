@@ -66,8 +66,20 @@
         color: #777;
         text-decoration: none;
     }
+
+    .last-update {
+        color: #777;
+        float: left;
+        padding: 15px 15px;
+        font-size: 14px;
+        line-height: 20px;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        color: #777;
+        text-decoration: none;
+    }
     
 
+    
     .navbar-right {
         float: right!important;
         margin-right: -15px;
