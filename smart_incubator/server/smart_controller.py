@@ -9,7 +9,7 @@ import glob
 import os
  
 import threading
-from bottle import Bottle, ServerAdapter, template, static_file, url, request
+from bottle import Bottle, template, static_file, url, request
 import json
  
 import MySQLdb
@@ -17,11 +17,6 @@ from MySQLdb import OperationalError
 import MySQLdb.cursors
 from MySQLdb.constants import FIELD_TYPE
 
-#import pymysql
-#from pymysql import OperationalError
-#import pymysql.cursors
-#from pymysql.constants import FIELD_TYPE
- 
  
 class mySQLConnection():
     """
@@ -33,7 +28,7 @@ class mySQLConnection():
     CREATE TABLE incubators.incubators
     (
     id int NOT NULL AUTO_INCREMENT,
-    inc_id TINYINT,
+    inc_id VARCHAR(255),
     row_type CHAR,
     counter BIGINT,
     device_time TIMESTAMP,
@@ -42,7 +37,7 @@ class mySQLConnection():
     light SMALLINT,
     set_temp FLOAT,
     set_hum FLOAT,
-    set_light SMALLINT,
+    set_light TINYINT,
     lights_on MEDIUMINT,
     lights_off MEDIUMINT,
     dd_mode TINYINT,
@@ -50,15 +45,12 @@ class mySQLConnection():
     );
      
     COMMIT;
-    
-    ALTER TABLE incubators CHANGE id inc_id VARCHAR(255) NOT NULL;
-    ALTER TABLE incubators ADD id INT NOT NULL AUTO_INCREMENT PRIMARY KEY;
- 
+
     """
  
-    def __init__(self, DB_CREDENTIALS):
+    def __init__(self, db_credentials):
         
-        self._DB_CREDENTIALS = DB_CREDENTIALS
+        self._DB_CREDENTIALS = db_credentials
         self.connect()
         
     def connect(self):
@@ -67,14 +59,11 @@ class mySQLConnection():
         _db_user_name = self._DB_CREDENTIALS["username"]
         _db_user_pass = self._DB_CREDENTIALS["password"]
         
-        my_conv = { FIELD_TYPE.TIMESTAMP: str, FIELD_TYPE.FLOAT: float, FIELD_TYPE.TINY: int, FIELD_TYPE.LONG: int, FIELD_TYPE.INT24: int }
+        my_conv = { FIELD_TYPE.TIMESTAMP: str, FIELD_TYPE.FLOAT: float, FIELD_TYPE.TINY: int, FIELD_TYPE.LONG: int, FIELD_TYPE.INT24: int}
         
         logging.debug("Creating a new connection with the `incubators` db")
-        try:
-            self.connection = MySQLdb.connect('localhost', _db_user_name, _db_user_pass, _db_name, conv=my_conv, cursorclass=MySQLdb.cursors.DictCursor)
-        except:
-            self.connection = pymysql.connect('localhost', _db_user_name, _db_user_pass, _db_name, conv=my_conv, cursorclass=pymysql.cursors.DictCursor)
-            
+
+        self.connection = MySQLdb.connect('localhost', _db_user_name, _db_user_pass, _db_name, conv=my_conv, cursorclass=MySQLdb.cursors.DictCursor)
         self.connection.autocommit(True)
  
     @staticmethod
@@ -82,39 +71,29 @@ class mySQLConnection():
         return time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(timestamp))
  
     def insert(self, query):
+        """
+        """
         try:
             with self.connection as cursor:
                 cursor.execute(query)
-                #self.connection.commit()
 
-        # For some reason, I often get a "OperationalError: (2006, 'MySQL server has gone away')"
-        # Could not debug this - so, as workaround, I create a new connection if the existing one is broken
-        # This, however, could result in a dangerous loop if connection keeps dropping
-        #except (AttributeError, MySQLdb.OperationalError):
         except (AttributeError, OperationalError):
-            
             self.connect()
             self.insert(query)
 
     def query(self, query):
+        """
+        """
         try:
-            
             with self.connection as cursor:
                 cursor.execute(query)
                 result = cursor.fetchall()
 
-        # For some reason, I often get a "OperationalError: (2006, 'MySQL server has gone away')"
-        # Could not debug this - so, as workaround, I create a new connection if the existing one is broken
-        #except (AttributeError, MySQLdb.OperationalError):
         except (AttributeError, OperationalError):
-
             self.connect()
             result = self.query(query)
 
         return result
- 
-    def __del__(self):
-        self.connection.close()
          
     def insert_row(self, data):
         """
@@ -134,18 +113,18 @@ class mySQLConnection():
         """
         """
         days = int(days)
-        zt0 = (9,0,0)
+        ZT0 = (9,0,0)
          
         start = datetime.date.today() - datetime.timedelta(days=days)
         end = start + datetime.timedelta(days=1)
          
         #datetime format
-        start = datetime.datetime(start.year, start.month, start.day, *zt0).strftime('%Y-%m-%d %H:%M:%S')
-        end = datetime.datetime(end.year, end.month, end.day, *zt0).strftime('%Y-%m-%d %H:%M:%S')
+        start = datetime.datetime(start.year, start.month, start.day, *ZT0).strftime('%Y-%m-%d %H:%M:%S')
+        end = datetime.datetime(end.year, end.month, end.day, *ZT0).strftime('%Y-%m-%d %H:%M:%S')
          
         #timestamp format
-        #start = time.mktime(datetime.datetime(start.year, start.month, start.day, *zt0).timetuple())
-        #end = time.mktime(datetime.datetime(end.year, end.month, end.day, *zt0).timetuple())
+        #start = time.mktime(datetime.datetime(start.year, start.month, start.day, *ZT0).timetuple())
+        #end = time.mktime(datetime.datetime(end.year, end.month, end.day, *ZT0).timetuple())
  
         if full:
             select_query = "SELECT inc_id, device_time, temperature, humidity, light, set_temp, set_hum, set_light, lights_on, lights_off, dd_mode FROM incubators WHERE inc_id = %s AND device_time BETWEEN '%s' AND '%s'" % ( int(incubator), start, end)
@@ -166,19 +145,41 @@ class mySQLConnection():
         """
         """
         if incubator == 'all' or incubator < 0:
-            select_query = "SELECT * FROM incubators.incubators WHERE device_time IN (SELECT MAX(device_time) FROM incubators.incubators GROUP BY inc_id) ORDER BY inc_id;"
+            select_query = "SELECT * FROM incubators.incubators WHERE device_time IN (SELECT MAX(device_time) FROM incubators.incubators GROUP BY inc_id) ORDER BY ABS(inc_id);"
             data = self.query(select_query)
 
         else:
             select_query = "SELECT * FROM incubators WHERE inc_id = %s ORDER BY device_time DESC LIMIT 1;" % incubator
             data = self.query(select_query)[0]
-            
+        
         return data
  
 class SerialController(threading.Thread):
-    def __init__(self, port=None, baud=115200, filename=None):
+    
+    _n_expected_values = 13
+
+    _command_dict = {"set_temp"  :  ['C', 'Temperature'],
+                     "set_hum"   :  ['H', 'Humidity'],
+                     "set_light" :  ['L', 'Light'],
+                     "dd_mode"   :  ['M', 'Light mode'],
+                     "lights_on" :  ['1', 'Lights on time'],
+                     "lights_off":  ['0', 'Lights off time'],
+                     "set_time"  :  ['T', 'Clock time'],
+                     "interval"  :  ['F', 'Transmit Interval']
+                    }
+
+    _dd_mode_map = {0:'DD', 1:'LD', 2:'LL', 3:'DL', 4:'MM'}
+
+    _delta_time_threshold = 15 # we sync time when and only when device had drifter more than this value (seconds)
+
+    
+    def __init__(self, port, baud, db_credentials):
         """
         """
+        
+        if baud is None:
+            baud = 115200
+        
         if port is None:
             logging.debug("No port specified. Scanning for ports...")
             port = self._find_port(baud)
@@ -186,21 +187,13 @@ class SerialController(threading.Thread):
         super(SerialController, self).__init__()
  
         self._serial = serial.Serial(port,baud)
-         
-        self._delta_time_threshold = 15 # we sync time when and only when device had drifter more than this value (seconds)
-        self._dd_mode_map = {0:'DD', 1:'LD', 2:'LL', 3:'DL', 4:'MM'}
-        
+       
         self._datatail = collections.deque(maxlen=100) #keeps last 100 lines in memory as dict
         self._serial_queue = collections.deque(maxlen=100) #keeps last 100 lines in memory as raw lines
-         
         self._is_stopped = False
+        
+        self._database = mySQLConnection(db_credentials)
  
-        self._filename = filename
-         
-        if DB_CREDENTIALS:
-            self._database = mySQLConnection(DB_CREDENTIALS)
- 
-        time.sleep(1)
  
     @staticmethod
     def _find_port(baud):
@@ -240,6 +233,7 @@ class SerialController(threading.Thread):
                     logging.debug("Port %s does not return any data, skipping" % port)
                     continue
                 result.append(port)
+                
             except (OSError, serial.SerialException) as e:
                 logging.debug(str(e))
                 pass
@@ -254,11 +248,10 @@ class SerialController(threading.Thread):
     def _parse_serial_line(self,line):
         """
         """
-        n_expected_values=13
         logging.debug("Getting line = " + line)
         fields = line.rstrip().split(" ")
          
-        if len(fields) != n_expected_values:
+        if len(fields) != self._n_expected_values:
             logging.warning("Wrong number of fields in serial input. Expect %s, got %i." % (n_expected_values, len(fields)))
             logging.debug('fields = ' + str(fields))
             return
@@ -266,7 +259,7 @@ class SerialController(threading.Thread):
         inc_id, command, counter, device_time, temperature, humidity, light, set_temp, set_hum, set_light, lights_on, lights_off, dd_mode = fields
         
         #if it's the room reading
-        if int(inc_id) == 0 : 
+        if int(inc_id) <= 0 :
             device_time = time.time()
             set_temp = 21
             set_hum = 35
@@ -298,33 +291,6 @@ class SerialController(threading.Thread):
             logging.warning("Current time is %i, but time on device %i is %i, syncing this device"% (now, device_id, device_time))
             return self.sendCommand(device_id, cmd='set_time', value=now)
  
-    def _write_row_to_file(self, fields):
-        """
-        """
-         
-        try:
- 
-            if not os.path.isfile(self._filename):
-                fh = open(self._filename, "w")
-                self._writer = csv.DictWriter(fh, fields.keys())
-                self._writer.writeheader()
-                logging.debug("The output file did not exist before. Writing headers")
- 
-            else:
-                fh = open(self._filename, "a")
-                self._writer = csv.DictWriter(fh, fields.keys())
-             
-        except NameError:
-            logging.error("Cannot save to file. Filename or fields not specified.")
-        except (OSError, IOError) as e:
-            logging.error(str(e))
-             
-                 
-        logging.debug('writing row: ' + str(fields))
-        self._writer.writerow(fields)
-        fh.close()
-     
-                 
     def getSerialBuffer(self):
         """
         """
@@ -361,37 +327,26 @@ class SerialController(threading.Thread):
         self._serial.write(line + '\n')
         return True
          
- 
+    def allowedCommands(self):
+        """
+        """
+        return self._command_dict.keys()
+
     def sendCommand(self, inc_id, cmd, value):
         """
         """
-        if cmd == 'set_temp':
-            line = 'C %s %s' % (inc_id, value)
-        elif cmd == 'set_hum':
-            line = 'H %s %s' % (inc_id, value)
-        elif cmd == 'set_light':
-            line = 'L %s %s' % (inc_id, value)
-        elif cmd == 'dd_mode':
-            line = 'M %s %s' % (inc_id, value)
-        elif cmd == 'lights_on':
-            line = '1 %s %s' % (inc_id, value)
-        elif cmd == 'lights_off':
-            line = '0 %s %s' % (inc_id, value)
-        elif cmd == 'set_time':
-            line = 'T %s %s' % (inc_id, value)
-        elif cmd == 'interval':
-            line = 'F %s %s' % (inc_id, value)
-             
-        logging.debug("Sending " + line)
-        self._serial.write(line + '\n')
-        #we should add a way to check for success here
-        #out = self._serial.readline()
-        #if "failed" in out:
-            #logging.error("Failed to send command: %s" % line)
-            #return False
-        return True
- 
+        if cmd not in self._command_dict.keys():
+            logging.error("Command does not exist: %s" % cmd) ## no such command
+            raise Exception("Command not found")
 
+        line = "%s %s %s" % ( self._command_dict[cmd][0], inc_id, value)
+
+        if self.sendRaw(line):
+            return "%s set to %s for incubator %s\n" % ( self._command_dict[cmd][1], value, inc_id)
+
+        #we should add a way to check for success here
+        return
+        
     def run(self):
         """
         """
@@ -404,16 +359,7 @@ class SerialController(threading.Thread):
                 continue
              
             self._sync_time( fields["inc_id"], fields["device_time"])
- 
-             
-            if self._filename: 
-                self._write_row_to_file(fields)
-                self._datatail.append(fields)
-             
-            elif self._database: 
-                self._database.insert_row(fields)
-             
- 
+            self._database.insert_row(fields)
              
     def stop(self):
         self._is_stopped = True
@@ -421,13 +367,13 @@ class SerialController(threading.Thread):
  
 class webServer(Bottle):
  
-    def __init__(self, serial_port):
+    def __init__(self, db_credentials, serial_port, baud):
         super(webServer, self).__init__()
 
-        self._serial_fetcher = SerialController(serial_port)
-        self._serial_fetcher.start() # starting the serial fetcher thread
+        self._serial_interface = SerialController(serial_port, baud, db_credentials)
+        self._serial_interface.start()
         
-        self._database = mySQLConnection(DB_CREDENTIALS)
+        self._database = mySQLConnection(db_credentials)
         self._route()
  
     def _route(self):
@@ -455,7 +401,7 @@ class webServer(Bottle):
          
     def _send_to_serial(self):
         myDict = request.json['myDict']
-        self._serial_fetcher.sendRaw ( myDict['line'] )
+        self._serial_interface.sendRaw ( myDict['line'] )
         return {"result": "OK"}
          
     def _get_graph(self, inc_id, day):
@@ -482,10 +428,11 @@ class webServer(Bottle):
         """
         if inc_id == 'serial':
  
-            serial = list(self._serial_fetcher.getSerialBuffer())
+            serial = list(self._serial_interface.getSerialBuffer())
             serial.reverse()
             data = {'result': ''.join(serial) }
             return data
+            
         else:
             return self.getlastData(inc_id)
          
@@ -501,44 +448,26 @@ class webServer(Bottle):
             return json.dumps(self._database.retrieve_last_line(incubator))
         else:
             return self._database.retrieve_last_line(incubator)
-
      
-    def update(self, inc_id, values):
+    def update(self, inc_id, new_values):
         """
         """
-        current = self.getlastData( inc_id , json_mode=False)
-         
+        current = self.getlastData( inc_id, json_mode=False)
         resp = ""
-         
-        if values['set_temp'] != current['set_temp'] : 
-            if self.sendCommand(inc_id, cmd='set_temp', value=values['set_temp']):
-                resp += "Temperature set to %s\n" % values['set_temp']
-        if values['set_hum'] != current['set_hum'] : 
-            if self.sendCommand(inc_id, cmd='set_hum', value=values['set_hum']):
-                resp += "Humidity set to %s\n" % values['set_hum']
-        if values['set_light'] != int(current['set_light']) : # why light is not being converted by mysqldb??!
-            if self.sendCommand(inc_id, cmd='set_light', value=values['set_light']):
-                resp += "Light set to %s\n" % values['set_light']
-        if values['dd_mode'] != current['dd_mode'] : 
-            if self.sendCommand(inc_id, cmd='dd_mode', value=values['dd_mode']):
-                resp += "Light Regime set to %s\n" % values['dd_mode']
-        if values['lights_on'] != current['lights_on'] : 
-            if self.sendCommand(inc_id, cmd='lights_on', value=values['lights_on']):
-                resp += "Lights on set to %s\n" % values['lights_on']
-        if values['lights_off'] != current['lights_off'] : 
-            if self.sendCommand(inc_id, cmd='lights_off', value=values['lights_off']):
-                resp += "Lights off set to %s\n" % values['lights_off']
+
+        for key in self._serial_interface.allowedCommands():
+            if key in new_values and ( new_values [key] != current[key] ):
+                resp += self._serial_interface.sendCommand(inc_id, cmd=key, value=new_values[key])
  
         return resp
 
-         
     def _listen_to_serial(self, status=True):
         """
         """
         if status:
-            self._serial_fetcher.start()
+            self._serial_interface.start()
         else:
-            self._serial_fetcher.stop()
+            self._serial_interface.stop()
              
         return {"listener_status" : status}
          
@@ -555,7 +484,6 @@ def transfer_file_to_db(filename, DB_CREDENTIALS):
 if __name__ == '__main__':
     parser = optparse.OptionParser()
  
-    parser.add_option("-o", "--output", dest="output", help="Where is the result stored")
     parser.add_option("-p", "--port", dest="port", default=None,help="Serial port to use")
     parser.add_option("-D", "--debug", dest="debug", default=False, help="Shows all logging messages", action="store_true")
     parser.add_option("-w", "--web", dest="web", default=False, help="Starts the webserver", action="store_true")
@@ -563,22 +491,19 @@ if __name__ == '__main__':
  
     (options, args) = parser.parse_args()
     option_dict = vars(options)
+    
     if(option_dict["debug"]):
         logging.getLogger().setLevel(logging.DEBUG)
         logging.debug("Logger in DEBUG mode")
- 
-    DB_CREDENTIALS = {'username': 'incubators', 'password' : 'incubators', 'db_name' : 'incubators' }
- 
-    #if option_dict['output']:
-    #    serial_fetcher = SerialController(option_dict["port"], filename=option_dict['output'])
-    #else: 
-    #    serial_fetcher = SerialController(option_dict["port"], DB_CREDENTIALS=DB_CREDENTIALS)
 
-
+    #this should be stored in a .ini file
+    dbc = {'username': 'incubators', 'password' : 'incubators', 'db_name' : 'incubators' }
+ 
     if option_dict['web']:
-        app = webServer(serial_port=option_dict["port"])
+        app = webServer(db_credentials=dbc, serial_port=option_dict["port"], baud=115200)
         app.run(host='0.0.0.0', port=8090)
+    
+    else:
         
-        #serial_fetcher.start()
-        #server = webServer(host='0.0.0.0', port=8090, serial_fetcher=serial_fetcher)
-        #server.start()
+        serial_fetcher = SerialController(serial_port, db_credentials=dbc)
+        serial_fetcher.start()
