@@ -23,7 +23,7 @@ from MySQLdb.constants import FIELD_TYPE
 #from pymysql.constants import FIELD_TYPE
  
  
-class mySQLDatabase():
+class mySQLConnection():
     """
     MariaDB [(none)]> CREATE DATABASE incubators;
     MariaDB [(none)]> CREATE USER 'incubators'@'localhost' IDENTIFIED BY 'incubators';
@@ -56,16 +56,16 @@ class mySQLDatabase():
  
     """
  
-    def __init__(self, db_credentials):
+    def __init__(self, DB_CREDENTIALS):
         
-        self._db_credentials = db_credentials
+        self._DB_CREDENTIALS = DB_CREDENTIALS
         self.connect()
         
     def connect(self):
 
-        _db_name = self._db_credentials["db_name"]
-        _db_user_name = self._db_credentials["username"]
-        _db_user_pass = self._db_credentials["password"]
+        _db_name = self._DB_CREDENTIALS["db_name"]
+        _db_user_name = self._DB_CREDENTIALS["username"]
+        _db_user_pass = self._DB_CREDENTIALS["password"]
         
         my_conv = { FIELD_TYPE.TIMESTAMP: str, FIELD_TYPE.FLOAT: float, FIELD_TYPE.TINY: int, FIELD_TYPE.LONG: int, FIELD_TYPE.INT24: int }
         
@@ -74,6 +74,8 @@ class mySQLDatabase():
             self.connection = MySQLdb.connect('localhost', _db_user_name, _db_user_pass, _db_name, conv=my_conv, cursorclass=MySQLdb.cursors.DictCursor)
         except:
             self.connection = pymysql.connect('localhost', _db_user_name, _db_user_pass, _db_name, conv=my_conv, cursorclass=pymysql.cursors.DictCursor)
+            
+        self.connection.autocommit(True)
  
     @staticmethod
     def _timestamp_to_datetime(timestamp):
@@ -83,7 +85,7 @@ class mySQLDatabase():
         try:
             with self.connection as cursor:
                 cursor.execute(query)
-                self.connection.commit()
+                #self.connection.commit()
 
         # For some reason, I often get a "OperationalError: (2006, 'MySQL server has gone away')"
         # Could not debug this - so, as workaround, I create a new connection if the existing one is broken
@@ -174,7 +176,7 @@ class mySQLDatabase():
         return data
  
 class SerialController(threading.Thread):
-    def __init__(self, port=None, baud=115200, filename=None, db_credentials=None):
+    def __init__(self, port=None, baud=115200, filename=None):
         """
         """
         if port is None:
@@ -195,8 +197,8 @@ class SerialController(threading.Thread):
  
         self._filename = filename
          
-        if db_credentials:
-            self._database = mySQLDatabase(db_credentials)
+        if DB_CREDENTIALS:
+            self._database = mySQLConnection(DB_CREDENTIALS)
  
         time.sleep(1)
  
@@ -322,20 +324,6 @@ class SerialController(threading.Thread):
         self._writer.writerow(fields)
         fh.close()
      
-    def getHistory(self, incubator,days=0):
-        """
-        """
-        if self._database:
-            return self._database.retrieve_day(incubator, days)
-                 
-    def getlastData(self, incubator, json_mode=True):
-        """
-        """
-        if self._database:
-            if json_mode or (incubator != 'all' and incubator < 0 ):
-                return json.dumps(self._database.retrieve_last_line(incubator))
-            else:
-                return self._database.retrieve_last_line(incubator)
                  
     def getSerialBuffer(self):
         """
@@ -365,18 +353,6 @@ class SerialController(threading.Thread):
                     return row
         return None
  
-    def __iter__(self):
-        """
-        """
-        while True:
-            serial_line = self._serial.readline()
- 
-            fields = self._parse_serial_line(serial_line)
-            if fields is None:
-                continue
-            self._sync_time( fields["inc_id"], fields["device_time"])
-            yield fields
-     
     def sendRaw(self, line):
         """
         """
@@ -415,36 +391,7 @@ class SerialController(threading.Thread):
             #return False
         return True
  
- 
-     
-    def update(self, inc_id, values):
-        """
-        """
-        current = self.getlastData( inc_id , json_mode=False)
-         
-        resp = ""
-         
-        if values['set_temp'] != current['set_temp'] : 
-            if self.sendCommand(inc_id, cmd='set_temp', value=values['set_temp']):
-                resp += "Temperature set to %s\n" % values['set_temp']
-        if values['set_hum'] != current['set_hum'] : 
-            if self.sendCommand(inc_id, cmd='set_hum', value=values['set_hum']):
-                resp += "Humidity set to %s\n" % values['set_hum']
-        if values['set_light'] != int(current['set_light']) : # why light is not being converted by mysqldb??!
-            if self.sendCommand(inc_id, cmd='set_light', value=values['set_light']):
-                resp += "Light set to %s\n" % values['set_light']
-        if values['dd_mode'] != current['dd_mode'] : 
-            if self.sendCommand(inc_id, cmd='dd_mode', value=values['dd_mode']):
-                resp += "Light Regime set to %s\n" % values['dd_mode']
-        if values['lights_on'] != current['lights_on'] : 
-            if self.sendCommand(inc_id, cmd='lights_on', value=values['lights_on']):
-                resp += "Lights on set to %s\n" % values['lights_on']
-        if values['lights_off'] != current['lights_off'] : 
-            if self.sendCommand(inc_id, cmd='lights_off', value=values['lights_off']):
-                resp += "Lights off set to %s\n" % values['lights_off']
- 
-        return resp
- 
+
     def run(self):
         """
         """
@@ -477,10 +424,10 @@ class webServer(Bottle):
     def __init__(self, serial_port):
         super(webServer, self).__init__()
 
-        db_credentials = {'username': 'incubators', 'password' : 'incubators', 'db_name' : 'incubators' }
-        self._serial_fetcher = SerialController(serial_port, db_credentials=db_credentials)
+        self._serial_fetcher = SerialController(serial_port)
         self._serial_fetcher.start() # starting the serial fetcher thread
         
+        self._database = mySQLConnection(DB_CREDENTIALS)
         self._route()
  
     def _route(self):
@@ -522,7 +469,7 @@ class webServer(Bottle):
             values['dd_mode'] = int(request.forms.get("dd_mode"))
             values['lights_on'] = int(request.forms.get("lights_on"))
             values['lights_off'] = int(request.forms.get("lights_off"))
-            rep['message'] = self._serial_fetcher.update(inc_id, values)
+            rep['message'] = self.update(inc_id, values)
         else:  
             rep['message'] = '' 
              
@@ -540,12 +487,50 @@ class webServer(Bottle):
             data = {'result': ''.join(serial) }
             return data
         else:
-            return self._serial_fetcher.getlastData(inc_id)
+            return self.getlastData(inc_id)
          
     def _get_incubator(self, inc_id, days):
          
-        data = self._serial_fetcher.getHistory(inc_id, days)
+        data = self._database.retrieve_day(incubator, days)
         return json.dumps(data)
+                 
+    def getlastData(self, incubator, json_mode=True):
+        """
+        """
+        if json_mode or (incubator != 'all' and incubator < 0 ):
+            return json.dumps(self._database.retrieve_last_line(incubator))
+        else:
+            return self._database.retrieve_last_line(incubator)
+
+     
+    def update(self, inc_id, values):
+        """
+        """
+        current = self.getlastData( inc_id , json_mode=False)
+         
+        resp = ""
+         
+        if values['set_temp'] != current['set_temp'] : 
+            if self.sendCommand(inc_id, cmd='set_temp', value=values['set_temp']):
+                resp += "Temperature set to %s\n" % values['set_temp']
+        if values['set_hum'] != current['set_hum'] : 
+            if self.sendCommand(inc_id, cmd='set_hum', value=values['set_hum']):
+                resp += "Humidity set to %s\n" % values['set_hum']
+        if values['set_light'] != int(current['set_light']) : # why light is not being converted by mysqldb??!
+            if self.sendCommand(inc_id, cmd='set_light', value=values['set_light']):
+                resp += "Light set to %s\n" % values['set_light']
+        if values['dd_mode'] != current['dd_mode'] : 
+            if self.sendCommand(inc_id, cmd='dd_mode', value=values['dd_mode']):
+                resp += "Light Regime set to %s\n" % values['dd_mode']
+        if values['lights_on'] != current['lights_on'] : 
+            if self.sendCommand(inc_id, cmd='lights_on', value=values['lights_on']):
+                resp += "Lights on set to %s\n" % values['lights_on']
+        if values['lights_off'] != current['lights_off'] : 
+            if self.sendCommand(inc_id, cmd='lights_off', value=values['lights_off']):
+                resp += "Lights off set to %s\n" % values['lights_off']
+ 
+        return resp
+
          
     def _listen_to_serial(self, status=True):
         """
@@ -560,7 +545,7 @@ class webServer(Bottle):
     def _quit(self):
         os._exit(1)
  
-def transfer_file_to_db(filename, db_credentials):
+def transfer_file_to_db(filename, DB_CREDENTIALS):
      
     with open(filename, "r") as fh:
         for line in fh.readlines()[1:]:
@@ -582,12 +567,12 @@ if __name__ == '__main__':
         logging.getLogger().setLevel(logging.DEBUG)
         logging.debug("Logger in DEBUG mode")
  
-    #db_credentials = {'username': 'incubators', 'password' : 'incubators', 'db_name' : 'incubators' }
+    DB_CREDENTIALS = {'username': 'incubators', 'password' : 'incubators', 'db_name' : 'incubators' }
  
     #if option_dict['output']:
     #    serial_fetcher = SerialController(option_dict["port"], filename=option_dict['output'])
     #else: 
-    #    serial_fetcher = SerialController(option_dict["port"], db_credentials=db_credentials)
+    #    serial_fetcher = SerialController(option_dict["port"], DB_CREDENTIALS=DB_CREDENTIALS)
 
 
     if option_dict['web']:
