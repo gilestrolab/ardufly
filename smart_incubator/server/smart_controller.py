@@ -252,7 +252,7 @@ class SerialController(threading.Thread):
         fields = line.rstrip().split(" ")
          
         if len(fields) != self._n_expected_values:
-            logging.warning("Wrong number of fields in serial input. Expect %s, got %i." % (n_expected_values, len(fields)))
+            logging.warning("Wrong number of fields in serial input. Expect %s, got %i." % (self._n_expected_values, len(fields)))
             logging.debug('fields = ' + str(fields))
             return
  
