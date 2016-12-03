@@ -89,25 +89,21 @@ function refreshDashboard(){
                 else
                     { $('#' + item.inc_id).find('.humidity').css('color','#777'); }
                 
-            $('#' + item.inc_id).find('.temperature').html(item.temperature);
-            $('#' + item.inc_id).find('.temperature').attr('title', item.temperature + " / " + item.set_temp);
-            
-            $('#' + item.inc_id).find('.light').css('opacity', item.light/100.0);
-            $('#' + item.inc_id).find('.light').attr('title', item.light + " / " + item.set_light*10);
-            
-            $('#' + item.inc_id).find('.humidity').html(item.humidity);
-            $('#' + item.inc_id).find('.humidity').attr('title', item.humidity + " / " + item.set_hum);
+                $('#' + item.inc_id).find('.temperature').html(item.temperature);
+                $('#' + item.inc_id).find('.temperature').attr('title', item.temperature + " / " + item.set_temp);
+                
+                $('#' + item.inc_id).find('.light').css('opacity', item.light/100.0);
+                $('#' + item.inc_id).find('.light').attr('title', item.light + " / " + item.set_light*10);
+                
+                $('#' + item.inc_id).find('.humidity').html(item.humidity);
+                $('#' + item.inc_id).find('.humidity').attr('title', item.humidity + " / " + item.set_hum);
 
-            lm = ["DD","LD","LL","DL","MM"]
-            $('#' + item.inc_id).find('.light_mode').html(lm[item.dd_mode]);
+                lm = ["DD","LD","LL","DL","MM"]
+                $('#' + item.inc_id).find('.light_mode').html(lm[item.dd_mode]);
 
-            
-            $('#' + item.inc_id).find('.time').find("p").html(item.device_time);
-            $('#' + item.inc_id).find('.time').attr('title', timestamp);
-            
-            var elapsed = moment().utc() - moment( timestamp * 1000);
-            $('.last-update').text("Last update: " + Math.floor(elapsed / 60000 / 60) + " mins ago")
-
+                
+                $('#' + item.inc_id).find('.time').find("p").html(item.device_time);
+                $('#' + item.inc_id).find('.time').attr('title', timestamp);
             })
           }); 
      window.setTimeout(refreshDashboard,1*60*1000); //we refresh once a minute
@@ -133,11 +129,15 @@ function checkTimeValues(){
     
 
     var now = moment().utc();
+    var all_times = [];
     updateClock();
     
     $('.time').each( function (i) {
         
         var timestamp = $(this).attr('title');
+        all_times.push(timestamp);
+
+
         var time = moment( timestamp * 1000);
         var delta = now - time; // in ms
 
@@ -151,6 +151,15 @@ function checkTimeValues(){
             $(this).find('p').css('font-weight','normal');
         }
     })
+
+    all_times.sort(function(a,b){
+      return b - a;
+    });
+    var elapsed_secs = (moment().utc() - moment( all_times[0] * 1000))/1000;
+    var elapsed_mins = Math.floor(elapsed_secs/60);
+    
+    $('.last-update').text("Last incubator update: " +elapsed_mins+ " mins ago")
+ 
     window.setTimeout(checkTimeValues,1000)
 }
 
