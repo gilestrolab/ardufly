@@ -145,7 +145,7 @@ class mySQLConnection():
         """
         """
         if incubator == 'all' or incubator < 0:
-            select_query = "SELECT * FROM incubators.incubators WHERE device_time IN (SELECT MAX(device_time) FROM incubators.incubators GROUP BY inc_id) ORDER BY ABS(inc_id);"
+            select_query = "SELECT * FROM incubators.incubators WHERE id IN ( SELECT MAX(id) FROM incubators.incubators GROUP BY inc_id) ORDER BY ABS(inc_id);"
             data = self.query(select_query)
 
         else:
