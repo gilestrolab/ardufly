@@ -4,9 +4,9 @@
 //Global variables use 1,655 bytes (80%) of dynamic memory, leaving 393 bytes for local variables. Maximum is 2,048 bytes.
 
 //define hardware connection and hard parameters
-#define VERSION 2.3
+#define VERSION 2.32
 #define masterID 0
-#define myID 15
+#define myID 20
 
 //still not implemented
 #define BUTTON_PIN 2 /// THIS IS ACTUALLY USED BY TEC DIR
@@ -25,16 +25,19 @@
 //#define HUM_PIN 9
 
 //pin for PELTIER TEC
+#define USE_TEC
+#define USE_TEC_PWM
 #define PELTIER_PWM 5 // what is the frequency of pin 6? pin 9 has a pwm frequency of 490hz
 #define PELTIER_DIR 2
+
 
 //define hardware and shields used
 #define USE_SENSIRION
 #define USE_RADIO
-#define USE_TEC
-//#define USE_TEC_PWM
 //#define USE_SD 1  // we do not use SD on regular UNOs because a) we don't need it and b) it takes too much memory
 //#define LOCAL_SERIAL
+
+// #####################################################################################################################
 
 #define CMD 'C'
 #define REPORT 'R'
@@ -162,6 +165,7 @@ void setup()
 {  
   
   Serial.begin(115200);
+  Serial.println(VERSION);
 
 #if defined(LOCAL_SERIAL)  
   setupSerialCommands();
@@ -507,14 +511,18 @@ void debug(){
   Serial.print("Lights OFF: "); Serial.println(cfg.lights_off); 
   Serial.print("Report Interval: "); Serial.println(cfg.report_delay);
   Serial.print("Send report: "); Serial.println(cfg.send_report);
-  Serial.print("Temperature: "); Serial.print(env.temperature);
+  Serial.print("T: "); Serial.print(env.temperature);
   Serial.print("/"); Serial.println(cfg.set_temp);
-  Serial.print("Humidity: "); Serial.print(env.humidity);
+  Serial.print("H: "); Serial.print(env.humidity);
   Serial.print("/"); Serial.println(cfg.set_hum);
-  Serial.print("Light: "); Serial.print(CURRENT_LIGHT);
+  Serial.print("L: "); Serial.print(CURRENT_LIGHT);
   Serial.print("/"); Serial.print(cfg.max_light);
   Serial.print(" - "); Serial.println(env.light);
-  Serial.print("Light Mode: "); Serial.println(cfg.dd_mode);
+  Serial.print("LM: "); Serial.println(cfg.dd_mode);
+#if defined(USE_TEC_PWM)
+  Serial.println("PWM: ON ");
+#endif
+
 }
 
 void setLightMode(int mode)
